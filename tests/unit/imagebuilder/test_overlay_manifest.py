@@ -71,6 +71,11 @@ def test_apply_overlay_copies_sources_and_is_idempotent(tmp_path: Path) -> None:
     release_marker = description / "root" / "etc" / "openqos-release"
     assert release_marker.read_text(encoding="utf-8").startswith("OpenQOS live environment")
     assert f"base=Fedora Linux {FEDORA_RELEASE}" in release_marker.read_text(encoding="utf-8")
+    buildstamp = (description / "root" / ".buildstamp").read_text(encoding="utf-8")
+    assert "Product=OpenQOS" in buildstamp
+    assert f"Version={FEDORA_RELEASE}" in buildstamp
+    releasever = description / "root" / "etc" / "dnf" / "vars" / "releasever"
+    assert releasever.read_text(encoding="utf-8").strip() == FEDORA_RELEASE
     config_before = (description / "config.sh").read_text(encoding="utf-8")
 
     apply_overlay(description, overlay, _PROJECT_ROOT)

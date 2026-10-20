@@ -59,6 +59,21 @@ def apply_overlay(description_dir: Path, overlay_dir: Path, project_root: Path) 
     dnf_releasever.parent.mkdir(parents=True, exist_ok=True)
     dnf_releasever.write_bytes(f"{FEDORA_RELEASE}\n".encode())
     changed.append(str(dnf_releasever))
+
+    # Anaconda derives the product version, and with it $releasever, from the
+    # buildstamp. Without it the anaconda defaults ("anaconda"/"bluesky") make
+    # the installer believe it runs rawhide and every package fails signature
+    # verification against the medium's keys.
+    buildstamp = description_dir / "root" / ".buildstamp"
+    buildstamp.write_bytes(
+        (
+            "[Main]\n"
+            "IsFinal=true\n"
+            "Product=OpenQOS\n"
+            f"Version={FEDORA_RELEASE}\n"
+        ).encode()
+    )
+    changed.append(str(buildstamp))
     changed.extend(_enable_units(description_dir, ("openqos-scan.service",)))
     # Bind mounts and Windows hosts do not carry POSIX modes, so set them.
     _set_tree_modes(
