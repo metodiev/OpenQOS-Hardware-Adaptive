@@ -22,11 +22,12 @@ anything that could modify a machine.
 | Versioned JSON schema + validator (`openqos hardware validate`) | **Implemented** |
 | ISO build plan and preflight (`openqos image plan/build`) | **Implemented** |
 | ISO build execution on Fedora (KIWI overlay) | **Verified** — `releases/openqos-generic-44.iso`, booted under BIOS and UEFI |
-| Hardware profile + compatibility rules (`openqos profile`) | **Implemented** (Phase 2) |
-| Optimization planner (`openqos optimize`) | **Implemented** — plan only, nothing applied |
-| Installer | Planned (Phase 3) |
-| Runtime adaptation service | Planned (Phase 4) |
-| Benchmarks | Planned (Phase 5) |
+| Hardware profile + compatibility rules (`openqos profile`) | **Implemented** (master roadmap Phase 3) |
+| Optimization planner (`openqos optimize`) | **Implemented** — plan only, nothing applied (Phase 3) |
+| Live USB integration (`openqos-scan.service`, boot report) | **Implemented** (Phase 4) |
+| Installer | Planned (Phase 5) |
+| Runtime adaptation service | Planned |
+| Benchmarks | Planned (Phase 7) |
 
 Nothing in this repository partitions disks, writes to `/boot`, or changes
 firmware settings.
@@ -45,7 +46,7 @@ python -m venv .venv
 . .venv/bin/activate            # Windows: .venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 
-pytest                          # 101 tests
+pytest                          # 107 tests
 ruff check .
 mypy
 ```
@@ -147,6 +148,7 @@ scripts/                maintenance helpers (sample inventory generation)
 * [Development environment](docs/development-environment.md)
 * [Hardware support and detection limits](docs/hardware-support.md)
 * [Profiles and optimization](docs/profiles-and-optimization.md)
+* [Live USB integration](docs/live-usb.md)
 * [ISO building](docs/iso-building.md)
 * [Security model](docs/security.md)
 * [Contributing](CONTRIBUTING.md)

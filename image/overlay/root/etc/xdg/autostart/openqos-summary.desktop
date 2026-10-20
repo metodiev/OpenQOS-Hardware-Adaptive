@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=OpenQOS Hardware Summary
+Comment=Hardware inventory and optimization plan produced at boot
+Exec=sh -c 'for i in $(seq 1 60); do [ -s /var/lib/openqos/summary.txt ] && break; sleep 1; done; if command -v konsole >/dev/null 2>&1; then exec konsole --hold -e cat /var/lib/openqos/summary.txt; fi'
+Terminal=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+X-KDE-autostart-after=panel

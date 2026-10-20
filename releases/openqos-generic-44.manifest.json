@@ -1,0 +1,60 @@
+{
+  "manifest_version": "1.0.0",
+  "generated_at": "2026-10-20T11:38:50+00:00",
+  "artifact": {
+    "path": "/var/tmp/openqos-iso6/out-build/Fedora.x86_64-44.iso",
+    "size_bytes": 3414495232,
+    "size_mib": 3256.3,
+    "sha256": "03ae7439224a157fd8af2c39af1afc20e4529f99128f78e042d643ebd9a9dacf"
+  },
+  "profile": "generic",
+  "environment": {
+    "base_distribution": "fedora-44",
+    "architecture": "x86_64",
+    "kiwi_descriptions": {
+      "repository": "https://forge.fedoraproject.org/releng/kiwi-descriptions.git",
+      "branch": "f44",
+      "commit": "dfc49a5a10f69941179fdadd96aa6a5984f7c677",
+      "kiwi_file": "Fedora.kiwi",
+      "image_type": "iso",
+      "image_profile": "KDE-Desktop-Live"
+    },
+    "host_packages": {
+      "kiwi-cli": "11.1.1",
+      "kiwi-systemdeps": "11.1.1",
+      "distribution-gpg-keys": "1.123",
+      "git": null,
+      "xorriso": null,
+      "qemu-img": null
+    },
+    "live_packages": [
+      "python3",
+      "lshw",
+      "pciutils",
+      "usbutils",
+      "util-linux",
+      "dmidecode",
+      "kernel-modules"
+    ],
+    "work_directory": "/var/tmp/openqos-iso6",
+    "description_directory": "/var/tmp/openqos-iso6/kiwi-descriptions",
+    "output_directory": "/var/tmp/openqos-iso6/out"
+  },
+  "package_versions": {
+    "distribution-gpg-keys": "1.123-1.fc44",
+    "kiwi-cli": "11.1.1-2.fc44",
+    "kiwi-systemdeps": "11.1.1-2.fc44"
+  },
+  "source_revision": "20d712330af89e2579854fef57aa844b7bb5fa3c",
+  "checksum_algorithm": "sha256",
+  "overlay_files": [
+    "/var/tmp/openqos-iso6/kiwi-descriptions/components/openqos.xml",
+    "/var/tmp/openqos-iso6/kiwi-descriptions/root/usr/local/bin/openqos",
+    "/var/tmp/openqos-iso6/kiwi-descriptions/root/etc/openqos-release",
+    "/var/tmp/openqos-iso6/kiwi-descriptions/root/opt/openqos/src/openqos",
+    "/var/tmp/openqos-iso6/kiwi-descriptions/Fedora.kiwi"
+  ],
+  "released_iso": "/var/tmp/openqos-releases6/openqos-generic-44.iso",
+  "manifest_path": "/var/tmp/openqos-releases6/openqos-generic-44.manifest.json",
+  "checksum_path": "/var/tmp/openqos-releases6/openqos-generic-44.iso.sha256"
+}

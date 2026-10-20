@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -38,6 +39,24 @@ def test_apply_overlay_copies_sources_and_is_idempotent(tmp_path: Path) -> None:
     assert (description / "components" / "openqos.xml").is_file()
     assert (description / "root" / "usr" / "local" / "bin" / "openqos").is_file()
     assert (description / "root" / "opt" / "openqos" / "src" / "openqos" / "cli.py").is_file()
+    assert (
+        description / "root" / "usr" / "lib" / "systemd" / "system" / "openqos-scan.service"
+    ).is_file()
+    assert (
+        description / "root" / "etc" / "xdg" / "autostart" / "openqos-summary.desktop"
+    ).is_file()
+    if os.name != "nt":
+        link = (
+            description
+            / "root"
+            / "etc"
+            / "systemd"
+            / "system"
+            / "multi-user.target.wants"
+            / "openqos-scan.service"
+        )
+        assert link.is_symlink()
+        assert link.resolve().name == "openqos-scan.service"
     wrapper_bytes = (description / "root" / "usr" / "local" / "bin" / "openqos").read_bytes()
     assert b"\r" not in wrapper_bytes
     assert wrapper_bytes.startswith(b"#!/bin/sh\n")

@@ -52,6 +52,7 @@ def apply_overlay(description_dir: Path, overlay_dir: Path, project_root: Path) 
         ).encode()
     )
     changed.append(str(release_marker))
+    changed.extend(_enable_units(description_dir, ("openqos-scan.service",)))
     # Bind mounts and Windows hosts do not carry POSIX modes, so set them.
     _set_tree_modes(description_dir / "root", executable={"openqos"})
 
@@ -97,6 +98,28 @@ def _copy_normalised(source: str | Path, target: str | Path) -> Path:
         return target_path
     target_path.write_bytes(text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8"))
     return target_path
+
+
+def _enable_units(description_dir: Path, units: tuple[str, ...]) -> list[str]:
+    """Enable units by creating relative symlinks in multi-user.target.wants.
+
+    The overlay tree cannot carry symlinks portably (a Windows checkout stores
+    them as plain files), so they are created here on the Linux build host.
+    """
+    changed: list[str] = []
+    wants = description_dir / "root" / "etc" / "systemd" / "system" / "multi-user.target.wants"
+    wants.mkdir(parents=True, exist_ok=True)
+    for unit in units:
+        link = wants / unit
+        target = f"../../../../usr/lib/systemd/system/{unit}"
+        try:
+            if link.is_symlink() or link.exists():
+                link.unlink()
+            link.symlink_to(target)
+            changed.append(str(link))
+        except OSError:  # pragma: no cover - Windows without symlink privileges
+            continue
+    return changed
 
 
 def _set_tree_modes(root: Path, *, executable: frozenset[str] | set[str] = frozenset()) -> None:

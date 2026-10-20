@@ -17,8 +17,9 @@ planner (which produces plans but applies nothing).
 | Hardware discovery | `openqos.hardware` | Implemented (read-only) |
 | Inventory schema and validation | `openqos.schemas`, `openqos.hardware.validate` | Implemented |
 | Image builder | `openqos.imagebuilder` | Implemented and verified (built + boot-tested) |
-| Hardware profiles and compatibility rules | `openqos.profiles` | Implemented (Phase 2) |
-| Optimization planner | `openqos.optimizer` | Implemented (Phase 2, plan only) |
+| Hardware profiles and compatibility rules | `openqos.profiles` | Implemented (Phase 3) |
+| Live-session integration | `openqos.status`, overlay units | Implemented (Phase 4) |
+| Optimization planner | `openqos.optimizer` | Implemented (Phase 3, plan only) |
 | Installer | — | Planned |
 | Runtime adaptation | — | Planned |
 | Benchmarks | — | Planned |

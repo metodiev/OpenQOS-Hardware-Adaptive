@@ -1,0 +1,22 @@
+[Unit]
+Description=OpenQOS hardware discovery and optimization plan
+Documentation=https://github.com/metodiev/OpenQOS-Hardware-Adaptive
+After=local-fs.target
+Before=display-manager.service
+ConditionPathExists=/usr/local/bin/openqos
+
+[Service]
+Type=oneshot
+StateDirectory=openqos
+StateDirectoryMode=0755
+Nice=5
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/openqos hardware scan --privacy --output /var/lib/openqos/inventory.json
+ExecStart=/usr/local/bin/openqos profile build --inventory /var/lib/openqos/inventory.json --output /var/lib/openqos/profile.json
+ExecStart=/usr/local/bin/openqos optimize --inventory /var/lib/openqos/inventory.json --format json --output /var/lib/openqos/plan.json
+ExecStart=/usr/local/bin/openqos status --state-dir /var/lib/openqos --write-summary /var/lib/openqos/summary.txt
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -29,6 +29,7 @@ from openqos.optimizer.validate import (
 from openqos.profiles.model import build_profile
 from openqos.profiles.rules import load_ruleset, match_profile
 from openqos.schemas import available_hardware_schema_versions, hardware_schema_path
+from openqos.status import build_status, load_state, render_status, write_summary
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -135,6 +136,23 @@ def build_parser() -> argparse.ArgumentParser:
     optimize.add_argument("--output", "-o", type=Path, default=None)
     optimize.add_argument("--format", choices=("json", "text"), default="text")
 
+    status = subparsers.add_parser(
+        "status", help="show the last discovery and optimization run"
+    )
+    status.add_argument(
+        "--state-dir",
+        type=Path,
+        default=None,
+        help="directory holding inventory.json, profile.json, and plan.json",
+    )
+    status.add_argument(
+        "--write-summary",
+        type=Path,
+        default=None,
+        help="also write the rendered report to this file",
+    )
+    status.add_argument("--format", choices=("text", "json"), default="text")
+
     return parser
 
 
@@ -150,6 +168,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_profile(args)
         if args.command == "optimize":
             return _run_optimize(args)
+        if args.command == "status":
+            return _run_status(args)
     except OpenQOSError as error:
         print(f"openqos: error: {error}", file=sys.stderr)
         return 2
@@ -386,6 +406,19 @@ def _run_optimize(args: argparse.Namespace) -> int:
         print(f"wrote {args.output}")
     else:
         sys.stdout.write(payload)
+    return 0
+
+
+def _run_status(args: argparse.Namespace) -> int:
+    state = load_state(args.state_dir)
+    status = build_status(state)
+    if args.format == "json":
+        payload = json.dumps(status, indent=2) + "\n"
+    else:
+        payload = render_status(status)
+    if args.write_summary:
+        write_summary(status, args.write_summary)
+    sys.stdout.write(payload)
     return 0
 
 

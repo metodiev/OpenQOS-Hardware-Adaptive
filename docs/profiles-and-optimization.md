@@ -1,6 +1,6 @@
 # Profiles and optimization
 
-Phase 2 turns a hardware inventory into a **normalised hardware profile**, matches
+Phase 3 turns a hardware inventory into a **normalised hardware profile**, matches
 it against **versioned, data-driven rules**, and produces a **validated
 optimization plan**. Nothing is applied: the plan is input for the installer
 (Phase 3) and the runtime service (Phase 4).
@@ -151,6 +151,6 @@ when the kernel rejects a runtime change.
 
 ## Not implemented yet
 
-* Applying a plan (installer, Phase 3).
-* Measuring whether a planned change actually helps (benchmarks, Phase 5).
+* Applying a plan (installer, Phase 5).
+* Measuring whether a planned change actually helps (benchmarks, Phase 7).
 * Hardware-specific kernel builds (optional, later).
