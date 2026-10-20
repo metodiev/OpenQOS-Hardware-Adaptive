@@ -1,11 +1,11 @@
 {
   "manifest_version": "1.0.0",
-  "generated_at": "2026-10-20T11:38:50+00:00",
+  "generated_at": "2026-10-20T12:16:52+00:00",
   "artifact": {
-    "path": "/var/tmp/openqos-iso6/out-build/Fedora.x86_64-44.iso",
-    "size_bytes": 3414495232,
-    "size_mib": 3256.3,
-    "sha256": "03ae7439224a157fd8af2c39af1afc20e4529f99128f78e042d643ebd9a9dacf"
+    "path": "/var/tmp/openqos-iso9/out-build/Fedora.x86_64-44.iso",
+    "size_bytes": 3414626304,
+    "size_mib": 3256.4,
+    "sha256": "d85b1e2a1fd5ed09460d3ba1fb07af327c724b95adb9d1778195b13171da8bfe"
   },
   "profile": "generic",
   "environment": {
@@ -36,25 +36,30 @@
       "dmidecode",
       "kernel-modules"
     ],
-    "work_directory": "/var/tmp/openqos-iso6",
-    "description_directory": "/var/tmp/openqos-iso6/kiwi-descriptions",
-    "output_directory": "/var/tmp/openqos-iso6/out"
+    "work_directory": "/var/tmp/openqos-iso9",
+    "description_directory": "/var/tmp/openqos-iso9/kiwi-descriptions",
+    "output_directory": "/var/tmp/openqos-iso9/out"
   },
   "package_versions": {
     "distribution-gpg-keys": "1.123-1.fc44",
     "kiwi-cli": "11.1.1-2.fc44",
     "kiwi-systemdeps": "11.1.1-2.fc44"
   },
-  "source_revision": "20d712330af89e2579854fef57aa844b7bb5fa3c",
+  "source_revision": "a1f5597144788da7fe3ece7e6e4082ca9bb2ad7f",
   "checksum_algorithm": "sha256",
   "overlay_files": [
-    "/var/tmp/openqos-iso6/kiwi-descriptions/components/openqos.xml",
-    "/var/tmp/openqos-iso6/kiwi-descriptions/root/usr/local/bin/openqos",
-    "/var/tmp/openqos-iso6/kiwi-descriptions/root/etc/openqos-release",
-    "/var/tmp/openqos-iso6/kiwi-descriptions/root/opt/openqos/src/openqos",
-    "/var/tmp/openqos-iso6/kiwi-descriptions/Fedora.kiwi"
+    "/var/tmp/openqos-iso9/kiwi-descriptions/components/openqos.xml",
+    "/var/tmp/openqos-iso9/kiwi-descriptions/root/usr/local/bin/openqos",
+    "/var/tmp/openqos-iso9/kiwi-descriptions/root/usr/local/bin/openqos-summary-window",
+    "/var/tmp/openqos-iso9/kiwi-descriptions/root/usr/lib/systemd/system/openqos-scan.service",
+    "/var/tmp/openqos-iso9/kiwi-descriptions/root/etc/xdg/autostart/openqos-summary.desktop",
+    "/var/tmp/openqos-iso9/kiwi-descriptions/root/etc/systemd/system-preset/90-openqos.preset",
+    "/var/tmp/openqos-iso9/kiwi-descriptions/root/etc/openqos-release",
+    "/var/tmp/openqos-iso9/kiwi-descriptions/root/usr/lib/systemd/system/openqos-scan.service",
+    "/var/tmp/openqos-iso9/kiwi-descriptions/root/opt/openqos/src/openqos",
+    "/var/tmp/openqos-iso9/kiwi-descriptions/Fedora.kiwi"
   ],
-  "released_iso": "/var/tmp/openqos-releases6/openqos-generic-44.iso",
-  "manifest_path": "/var/tmp/openqos-releases6/openqos-generic-44.manifest.json",
-  "checksum_path": "/var/tmp/openqos-releases6/openqos-generic-44.iso.sha256"
+  "released_iso": "/var/tmp/openqos-releases9/openqos-generic-44.iso",
+  "manifest_path": "/var/tmp/openqos-releases9/openqos-generic-44.manifest.json",
+  "checksum_path": "/var/tmp/openqos-releases9/openqos-generic-44.iso.sha256"
 }

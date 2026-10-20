@@ -59,6 +59,30 @@ openqos status --state-dir /var/lib/openqos
 On an installed system the same command works; `status` simply reports that no
 scan has run yet until one does.
 
+## Verified
+
+The integration was verified with the ISO built from revision
+`a1f5597` (`releases/openqos-generic-44.iso`,
+SHA-256 `d85b1e2a1fd5ed09460d3ba1fb07af327c724b95adb9d1778195b13171da8bfe`):
+
+1. `systemctl --root=<image root> is-enabled openqos-scan.service` reports
+   `enabled`, so the unit is active without any manual step.
+2. The ISO was booted under QEMU/KVM with OVMF (UEFI), 4 GiB RAM, 4 vCPU.
+3. After the KDE session started, a Konsole window appeared automatically with
+   the `OpenQOS hardware report`: system and kernel, CPU, memory, graphics,
+   storage, network, firmware, the selected profile (`virtual-machine` in
+   QEMU), the policy, the decision counts, planned packages, and the
+   compatibility notes.
+
+### Why a systemd preset is required
+
+The Fedora image build runs `systemctl preset`, whose default policy disables
+units that are not listed in a preset file. Creating an enablement symlink in
+the overlay is not enough: `90-openqos.preset` ships `enable
+openqos-scan.service`, which makes the state deterministic. This was found by
+booting the image and inspecting `systemctl status`: the unit reported
+`disabled; preset: disabled` and never ran.
+
 ## Testing the live image
 
 ```bash
@@ -70,16 +94,11 @@ qemu-system-x86_64 -enable-kvm -m 4096 -smp 4 -machine q35 -cpu host \
   -monitor unix:/var/tmp/mon.sock,server=on,wait=off
 ```
 
-Expected result: the KDE desktop appears with a *OpenQOS hardware report* window
-listing the virtual hardware, the selected profile (`virtual-machine` in QEMU,
-because the guest reports a hypervisor), planned changes, and the "Nothing has
-been changed on this system" line.
-
-From the host, the same information is available over the serial console only if
-a console was configured; use the screenshot/monitor as the primary check.
+Expected result: the KDE desktop appears and the report window opens on its own.
+The Welcome Center dialog may cover it; close that window to read the full
+report.
 
 ## Not part of Phase 4
 
-* Applying the plan (installer, Phase 5).
-* Persistent storage of the report on an installed system (runtime service,
-  Phase 6).
+* Applying the plan (installer, Phase 5 — now implemented as a planner).
+* Persistent storage of the report on an installed system (runtime service).

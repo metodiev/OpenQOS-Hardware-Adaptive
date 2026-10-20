@@ -112,10 +112,11 @@ A complete build and boot test was performed on **2026-10-20**:
 | `distribution-gpg-keys` | 1.123-1.fc44 |
 | KIWI descriptions | `f44` @ `dfc49a5a10f69941179fdadd96aa6a5984f7c677` |
 | Target | `iso` / `KDE-Desktop-Live` |
-| Duration | about 8 minutes (package download included) |
+| Duration | about 8-15 minutes (package download and EROFS compression included) |
 | Artifact | `releases/openqos-generic-44.iso` |
-| Size | 3,414,601,728 bytes (3256.4 MiB) |
-| SHA-256 | recorded in `releases/openqos-generic-44.iso.sha256` |
+| Size | 3,414,626,304 bytes (3256.3 MiB) |
+| SHA-256 | `d85b1e2a1fd5ed09460d3ba1fb07af327c724b95adb9d1778195b13171da8bfe` |
+| Source revision | `a1f5597144788da7fe3ece7e6e4082ca9bb2ad7f` |
 | Manifest | `releases/openqos-generic-44.manifest.json` |
 
 Build command (inside the container, repository at `/work`):
@@ -142,13 +143,18 @@ PYTHONPATH=/work/src python3 -m openqos image build --execute \
 5. The shipped CLI was executed from the extracted tree:
    `openqos 0.1.0`, and `openqos hardware scan` + `validate` both succeeded
    against a live kernel.
-6. The ISO was booted twice under QEMU 10.2.2 with KVM:
+6. The ISO was booted under QEMU 10.2.2 with KVM:
    * SeaBIOS (BIOS) boot, 4 GiB RAM, 4 vCPU, virtio-vga;
    * OVMF (UEFI) boot with the same settings.
 
    Both reached the KDE Plasma live desktop with the *Welcome to Fedora Linux!*
-   dialog and the **Install to Hard Drive** launcher, which is the expected
-   Phase 1 end state.
+   dialog and the **Install to Hard Drive** launcher.
+7. With Phase 4 included, the boot report was verified: `systemctl --root`
+   reports `openqos-scan.service` as `enabled` in the image, and after boot the
+   KDE session automatically opened a Konsole window containing the generated
+   `OpenQOS hardware report` (system, CPU, memory, graphics, storage, network,
+   firmware, selected profile, policy, decisions, packages, and compatibility
+   notes).
 
 ### Not yet verified
 

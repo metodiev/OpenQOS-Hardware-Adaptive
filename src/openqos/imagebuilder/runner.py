@@ -80,7 +80,7 @@ def apply_overlay(description_dir: Path, overlay_dir: Path, project_root: Path) 
     if _KIWI_INCLUDE not in content:
         kiwi_file.write_bytes(_append_include(content).encode("utf-8"))
         changed.append(str(kiwi_file))
-    return changed
+    return list(dict.fromkeys(changed))
 
 
 def _copy_normalised(source: str | Path, target: str | Path) -> Path:
