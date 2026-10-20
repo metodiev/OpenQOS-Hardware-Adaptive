@@ -66,16 +66,17 @@ the installed system matches the ISO instead of whatever the network considers
 current:
 
 ```
-repo --name=fedora --metalink=https://mirrors.fedoraproject.org/metalink?repo=fedora-44&arch=$basearch
-repo --name=updates --metalink=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f44&arch=$basearch
+repo --name=fedora --metalink=https://mirrors.fedoraproject.org/metalink?repo=fedora-44&arch=$basearch --gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-44-primary,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-44-$basearch
+repo --name=updates --metalink=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f44&arch=$basearch --gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-44-primary,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-44-$basearch
 ```
 
 The release comes from `ID`/`VERSION_ID` in `/etc/os-release`; on a non-Fedora
-host no repositories are pinned and Anaconda uses its own defaults. Skipping
-this pin is not harmless: Anaconda 44 resolves `$releasever` on its own, picks
-the current stable release instead of the medium's, and the transaction then
-aborts with `Signature verification failed` because the new packages are signed
-with keys the medium does not carry.
+host no repositories are pinned and Anaconda uses its own defaults. The `repo`
+lines carry the keys from the medium, because Anaconda disables the system
+repositories as soon as a Kickstart defines its own: without `--gpgkey` every
+package fails with `Signature verification failed`. Keeping the pin matters
+too — Anaconda 44 otherwise resolves `$releasever` to the current stable release
+instead of the medium's, which fails verification against the medium's keys.
 
 ## Layout
 

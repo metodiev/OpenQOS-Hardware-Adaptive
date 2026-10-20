@@ -166,7 +166,9 @@ def test_kickstart_pins_repositories_to_the_medium_release(disk_tree: Path, tmp_
     assert plan["source"]["release_version"] == "44"
     assert (
         "repo --name=fedora --metalink="
-        "https://mirrors.fedoraproject.org/metalink?repo=fedora-44&arch=$basearch" in text
+        "https://mirrors.fedoraproject.org/metalink?repo=fedora-44&arch=$basearch"
+        " --gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-44-primary,"
+        "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-44-$basearch" in text
     )
     assert (
         "repo --name=updates --metalink="

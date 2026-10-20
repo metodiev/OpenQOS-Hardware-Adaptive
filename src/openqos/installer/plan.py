@@ -29,6 +29,7 @@ _KDE_GROUP = "kde-desktop-environment"
 _INSTALL_STAGE_DECISIONS = {"storage-trim", "packages"}
 
 _METALINK = "https://mirrors.fedoraproject.org/metalink?repo={repo}&arch=$basearch"
+_GPG_KEY = "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-{release}-{suffix}"
 
 
 def detect_release_version(root: Path | None = None) -> str | None:
@@ -54,14 +55,23 @@ def detect_release_version(root: Path | None = None) -> str | None:
     return None
 
 
-def _repositories(release_version: str | None) -> list[dict[str, str]]:
+def _repositories(release_version: str | None) -> list[dict[str, Any]]:
     if not release_version:
         return []
+    keys = [
+        _GPG_KEY.format(release=release_version, suffix="primary"),
+        _GPG_KEY.format(release=release_version, suffix="$basearch"),
+    ]
     return [
-        {"name": "fedora", "metalink": _METALINK.format(repo=f"fedora-{release_version}")},
+        {
+            "name": "fedora",
+            "metalink": _METALINK.format(repo=f"fedora-{release_version}"),
+            "gpgkeys": keys,
+        },
         {
             "name": "updates",
             "metalink": _METALINK.format(repo=f"updates-released-f{release_version}"),
+            "gpgkeys": keys,
         },
     ]
 
@@ -156,10 +166,14 @@ def build_install_plan(
 
 def _repo_lines(plan: dict[str, Any]) -> list[str]:
     source = plan.get("source") or {}
-    return [
-        f"repo --name={repository['name']} --metalink={repository['metalink']}"
-        for repository in source.get("repositories") or []
-    ]
+    lines = []
+    for repository in source.get("repositories") or []:
+        keys = ",".join(repository.get("gpgkeys") or [])
+        line = f"repo --name={repository['name']} --metalink={repository['metalink']}"
+        if keys:
+            line += f" --gpgkey={keys}"
+        lines.append(line)
+    return lines
 
 
 def _packages(optimization_plan: dict[str, Any]) -> list[str]:
