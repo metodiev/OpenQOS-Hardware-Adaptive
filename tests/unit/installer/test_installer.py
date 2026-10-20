@@ -134,6 +134,7 @@ def test_install_plan_contents(disk_tree: Path, tmp_path: Path) -> None:
     assert plan["layout"]["swap"]["strategy"] == "zram"
     assert plan["packages"]["groups"] == ["kde-desktop-environment"]
     assert "zram-generator" in plan["packages"]["packages"]
+    assert "sddm" in plan["packages"]["packages"]
     assert "storage-trim" in plan["decisions_at_install"]
     assert plan["user"]["locked"] is True
 
@@ -146,6 +147,7 @@ def test_kickstart_rendering(disk_tree: Path, tmp_path: Path) -> None:
     assert "part / --fstype=ext4 --grow --size=4096 --ondisk=sdb" in text
     assert "@kde-desktop-environment" in text
     assert "systemctl enable openqos-scan.service" in text
+    assert "systemctl set-default graphical.target" in text
     assert "systemctl enable fstrim.timer" in text
     assert "cp -a /opt/openqos/. \"$ANA_INSTALL_PATH/opt/openqos/\"" in text
     assert "reboot" in text

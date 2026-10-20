@@ -138,7 +138,7 @@ def build_install_plan(
 
 def _packages(optimization_plan: dict[str, Any]) -> list[str]:
     packages = set(optimization_plan.get("summary", {}).get("packages") or [])
-    packages.update({"kernel", "dracut-config-rescue", "zram-generator"})
+    packages.update({"kernel", "dracut-config-rescue", "zram-generator", "sddm"})
     return sorted(packages)
 
 
@@ -273,6 +273,7 @@ def render_kickstart(plan: dict[str, Any]) -> str:
             "%post --erroronfail",
             "set -eu",
             "systemctl enable openqos-scan.service",
+            "systemctl set-default graphical.target",
         ]
     )
     if "storage-trim" in plan["decisions_at_install"]:

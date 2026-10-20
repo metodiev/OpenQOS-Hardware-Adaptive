@@ -63,16 +63,18 @@ Attach a second disk and run this again.
 
 The Kickstart defines **no** `repo` lines on purpose, so Anaconda keeps the
 repository definitions that ship on the medium — the ones that already carry the
-Fedora GPG keys. Two properties of the medium make that work:
+Fedora GPG keys. Three properties of the medium make that work:
 
-* `fedora-release` is installed, so `/etc/system-release` resolves and Anaconda
-  reports the medium's release instead of falling back to `rawhide`.
+* `/.buildstamp` declares `Product=OpenQOS` and `Version=<release>`. Anaconda
+  derives `$releasever` from it and falls back to `bluesky`/`development` (which
+  it turns into `rawhide`) when the file is missing.
+* `fedora-release` is installed, so `/etc/system-release` resolves.
 * `/etc/dnf/vars/releasever` contains the release, written by the image builder
   from `FEDORA_RELEASE`.
 
-Both matter: with a dangling `/etc/system-release` Anaconda resolved
-`$releasever` to the current stable release, downloaded a complete Fedora 45
-payload for a 44 medium, and then aborted the transaction with
+All three matter: without a buildstamp Anaconda believed it was running rawhide,
+resolved the repositories to the current stable release, downloaded a complete
+Fedora 45 payload for a 44 medium, and aborted the transaction with
 `Signature verification failed` because the medium only carries the 44 keys.
 
 Defining `repo` lines is not an alternative: Kickstart's `repo` command has no
