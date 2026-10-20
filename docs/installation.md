@@ -123,6 +123,7 @@ network --bootproto=dhcp --device=link --activate
 kernel
 dracut-config-rescue
 zram-generator
+sddm
 <packages from the optimization plan>
 %end
 ```
