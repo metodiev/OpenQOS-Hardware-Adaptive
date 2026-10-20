@@ -1,0 +1,191 @@
+{
+  "schema_version": "1.0.0",
+  "revision": "2026.10.1",
+  "profiles": [
+    {
+      "id": "virtual-machine",
+      "description": "Guest on a hypervisor: no hardware-specific drivers or power tuning.",
+      "priority": 90,
+      "match": {
+        "all": [{ "field": "machine.is_virtual_machine", "op": "eq", "value": true }]
+      },
+      "package_sets": [],
+      "default_policy": "balanced",
+      "notes": [
+        "CPU frequency and platform profile controls are usually emulated or absent in guests.",
+        "Hardware identifiers describe the virtual hardware, not the physical machine."
+      ]
+    },
+    {
+      "id": "hybrid-graphics-laptop",
+      "description": "Laptop with two graphics vendors (integrated plus discrete).",
+      "priority": 80,
+      "match": {
+        "all": [
+          { "field": "machine.form_factor", "op": "eq", "value": "laptop" },
+          { "field": "graphics.hybrid", "op": "eq", "value": true }
+        ]
+      },
+      "package_sets": ["power-management-laptop"],
+      "default_policy": "balanced",
+      "notes": [
+        "Keep the integrated adapter as the primary render device unless the user requests otherwise.",
+        "Proprietary discrete drivers are never installed automatically."
+      ]
+    },
+    {
+      "id": "nvidia-graphics",
+      "description": "System whose graphics adapter is bound to the NVIDIA driver.",
+      "priority": 75,
+      "match": {
+        "all": [
+          { "field": "graphics.requires_third_party_driver", "op": "eq", "value": true }
+        ]
+      },
+      "package_sets": ["nvidia-firmware"],
+      "default_policy": "balanced",
+      "notes": [
+        "The open kernel driver is used when it is available; the proprietary driver needs an explicit user decision.",
+        "Do not mix OpenQOS-provided and vendor-provided graphics libraries."
+      ]
+    },
+    {
+      "id": "low-memory",
+      "description": "Machine with limited RAM; compressed swap and lighter defaults.",
+      "priority": 65,
+      "match": {
+        "all": [{ "field": "memory.tier", "op": "eq", "value": "low" }]
+      },
+      "package_sets": ["zram"],
+      "default_policy": "balanced",
+      "notes": ["Avoid desktop effects that need more than 2 GiB of free memory."]
+    },
+    {
+      "id": "intel-laptop",
+      "description": "Single-vendor Intel laptop with integrated graphics.",
+      "priority": 55,
+      "match": {
+        "all": [
+          { "field": "machine.form_factor", "op": "eq", "value": "laptop" },
+          { "field": "cpu.vendor", "op": "eq", "value": "intel" }
+        ]
+      },
+      "package_sets": ["intel-graphics", "power-management-laptop", "sof-audio"],
+      "default_policy": "balanced",
+      "notes": ["Intel laptops normally use the intel_pstate driver and SOF audio firmware."]
+    },
+    {
+      "id": "amd-laptop",
+      "description": "Single-vendor AMD laptop with integrated graphics.",
+      "priority": 55,
+      "match": {
+        "all": [
+          { "field": "machine.form_factor", "op": "eq", "value": "laptop" },
+          { "field": "cpu.vendor", "op": "eq", "value": "amd" }
+        ]
+      },
+      "package_sets": ["amd-graphics", "power-management-laptop"],
+      "default_policy": "balanced",
+      "notes": ["amd-pstate with EPP is preferred over the legacy acpi-cpufreq driver."]
+    },
+    {
+      "id": "intel-desktop",
+      "description": "Intel desktop or workstation.",
+      "priority": 45,
+      "match": {
+        "all": [
+          { "field": "machine.form_factor", "op": "eq", "value": "desktop" },
+          { "field": "cpu.vendor", "op": "eq", "value": "intel" }
+        ]
+      },
+      "package_sets": ["intel-graphics"],
+      "default_policy": "balanced",
+      "notes": ["Desktop power settings default to balanced; performance is a user choice."]
+    },
+    {
+      "id": "amd-desktop",
+      "description": "AMD desktop or workstation.",
+      "priority": 45,
+      "match": {
+        "all": [
+          { "field": "machine.form_factor", "op": "eq", "value": "desktop" },
+          { "field": "cpu.vendor", "op": "eq", "value": "amd" }
+        ]
+      },
+      "package_sets": ["amd-graphics", "amd-cpu-microcode"],
+      "default_policy": "balanced",
+      "notes": ["AMD microcode updates are delivered through amd-ucode-firmware."]
+    },
+    {
+      "id": "rotational-storage",
+      "description": "System whose only storage is a rotational disk.",
+      "priority": 40,
+      "match": {
+        "all": [{ "field": "storage.primary", "op": "eq", "value": "hdd" }]
+      },
+      "package_sets": [],
+      "default_policy": "balanced",
+      "notes": [
+        "Do not schedule fstrim on rotational media.",
+        "Keep swap off the rotational disk when enough RAM exists."
+      ]
+    },
+    {
+      "id": "generic-x86-64",
+      "description": "Conservative baseline used when no specific profile matches.",
+      "priority": 0,
+      "fallback": true,
+      "match": { "all": [] },
+      "package_sets": [],
+      "default_policy": "balanced",
+      "notes": ["No specific hardware knowledge was applied."]
+    }
+  ],
+  "package_sets": {
+    "intel-graphics": {
+      "source": "fedora",
+      "packages": ["mesa-dri-drivers", "intel-gpu-firmware"],
+      "reason": "Mesa userspace drivers and GuC/HuC/DMC firmware for Intel graphics."
+    },
+    "amd-graphics": {
+      "source": "fedora",
+      "packages": ["mesa-dri-drivers", "amd-gpu-firmware"],
+      "reason": "Mesa userspace drivers and amdgpu firmware."
+    },
+    "nvidia-firmware": {
+      "source": "fedora",
+      "packages": ["nvidia-gpu-firmware"],
+      "reason": "Firmware for the open Nouveau driver; the proprietary driver is not installed automatically."
+    },
+    "amd-cpu-microcode": {
+      "source": "fedora",
+      "packages": ["amd-ucode-firmware"],
+      "reason": "CPU microcode updates for AMD processors."
+    },
+    "intel-wifi": {
+      "source": "fedora",
+      "packages": ["iwlwifi-mvm-firmware"],
+      "reason": "Firmware required by the iwlwifi driver for Intel wireless adapters."
+    },
+    "sof-audio": {
+      "source": "fedora",
+      "packages": ["alsa-sof-firmware"],
+      "reason": "Sound Open Firmware topology and firmware for Intel laptops."
+    },
+    "power-management-laptop": {
+      "source": "fedora",
+      "packages": ["power-profiles-daemon"],
+      "reason": "Exposes the ACPI platform profile through a supported D-Bus interface."
+    },
+    "intel-thermal": {
+      "source": "fedora",
+      "packages": ["thermald"],
+      "reason": "Userspace thermal management for Intel platforms."
+    },
+    "zram": {
+      "source": "fedora",
+      "packages": ["zram-generator"],
+      "reason": "Compressed RAM swap without changing the disk layout."
+    }
+  }
+}

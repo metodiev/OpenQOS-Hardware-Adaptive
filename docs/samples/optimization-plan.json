@@ -1,0 +1,432 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-10-20T11:31:36+00:00",
+  "policy": "balanced",
+  "policy_description": "Default policy: responsive under load without wasting energy at idle.",
+  "policy_revision": "2026.10.1",
+  "selected_profile": {
+    "profile_id": "hybrid-graphics-laptop",
+    "description": "Laptop with two graphics vendors (integrated plus discrete).",
+    "priority": 80,
+    "fallback": false,
+    "matched_conditions": [
+      "machine.form_factor eq 'laptop' (actual 'laptop')",
+      "graphics.hybrid eq True (actual True)"
+    ],
+    "evaluated_rules": [
+      {
+        "rule": "virtual-machine",
+        "matched": false,
+        "conditions": [
+          "machine.is_virtual_machine eq True (actual False)"
+        ]
+      },
+      {
+        "rule": "hybrid-graphics-laptop",
+        "matched": true,
+        "conditions": [
+          "machine.form_factor eq 'laptop' (actual 'laptop')",
+          "graphics.hybrid eq True (actual True)"
+        ]
+      },
+      {
+        "rule": "nvidia-graphics",
+        "matched": true,
+        "conditions": [
+          "graphics.requires_third_party_driver eq True (actual True)"
+        ]
+      },
+      {
+        "rule": "low-memory",
+        "matched": false,
+        "conditions": [
+          "memory.tier eq 'low' (actual 'standard')"
+        ]
+      },
+      {
+        "rule": "intel-laptop",
+        "matched": true,
+        "conditions": [
+          "machine.form_factor eq 'laptop' (actual 'laptop')",
+          "cpu.vendor eq 'intel' (actual 'intel')"
+        ]
+      },
+      {
+        "rule": "amd-laptop",
+        "matched": false,
+        "conditions": [
+          "machine.form_factor eq 'laptop' (actual 'laptop')",
+          "cpu.vendor eq 'amd' (actual 'intel')"
+        ]
+      },
+      {
+        "rule": "intel-desktop",
+        "matched": false,
+        "conditions": [
+          "machine.form_factor eq 'desktop' (actual 'laptop')"
+        ]
+      },
+      {
+        "rule": "amd-desktop",
+        "matched": false,
+        "conditions": [
+          "machine.form_factor eq 'desktop' (actual 'laptop')"
+        ]
+      },
+      {
+        "rule": "rotational-storage",
+        "matched": false,
+        "conditions": [
+          "storage.primary eq 'hdd' (actual 'ssd')"
+        ]
+      }
+    ],
+    "package_sets": [
+      "power-management-laptop"
+    ],
+    "notes": [
+      "Keep the integrated adapter as the primary render device unless the user requests otherwise.",
+      "Proprietary discrete drivers are never installed automatically."
+    ],
+    "default_policy": "balanced",
+    "rules_revision": "2026.10.1"
+  },
+  "decisions": [
+    {
+      "id": "cpu-governor",
+      "category": "cpu",
+      "title": "CPU frequency governor",
+      "status": "keep",
+      "target": "cpufreq.scaling_governor",
+      "value": "powersave",
+      "current_value": "powersave",
+      "already_satisfied": true,
+      "rationale": "The balanced policy selects the 'powersave' governor. The system is already using this value.",
+      "evidence": [
+        "power.governors=['performance', 'powersave']",
+        "power.governor='powersave'"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "rollback": {
+        "action": "write",
+        "target": "cpufreq.scaling_governor",
+        "value": "powersave"
+      },
+      "apply_stage": "runtime",
+      "packages": [],
+      "source": "fedora",
+      "notes": []
+    },
+    {
+      "id": "graphics-driver",
+      "category": "graphics",
+      "title": "Graphics driver and hybrid strategy",
+      "status": "keep",
+      "target": "graphics.driver",
+      "value": "i915",
+      "current_value": "i915",
+      "already_satisfied": true,
+      "rationale": "The kernel already binds i915, nvidia. Two vendors are present: the integrated adapter stays the primary render device and the discrete adapter is used on demand.",
+      "evidence": [
+        "graphics.vendor_ids=['10de', '8086']",
+        "graphics.drivers=['i915', 'nvidia']"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "rollback": null,
+      "apply_stage": "runtime",
+      "packages": [],
+      "source": "fedora",
+      "notes": []
+    },
+    {
+      "id": "graphics-proprietary-driver",
+      "category": "graphics",
+      "title": "Proprietary NVIDIA driver",
+      "status": "manual",
+      "target": "graphics.proprietary_driver",
+      "value": "nvidia",
+      "current_value": "nvidia",
+      "already_satisfied": false,
+      "rationale": "The proprietary driver is not redistributable by OpenQOS and is not installed automatically. Installing it requires enabling a third-party repository and an explicit user decision.",
+      "evidence": [
+        "graphics.drivers contains 'nvidia'"
+      ],
+      "risk": "medium",
+      "reversible": true,
+      "rollback": null,
+      "apply_stage": "runtime",
+      "packages": [],
+      "source": "fedora",
+      "notes": []
+    },
+    {
+      "id": "memory-swap",
+      "category": "memory",
+      "title": "Compressed RAM swap",
+      "status": "plan",
+      "target": "swap.zram",
+      "value": {
+        "device": "zram0",
+        "percent_of_ram": 50
+      },
+      "current_value": "disk swap",
+      "already_satisfied": false,
+      "rationale": "zram provides 50% of RAM as compressed swap without touching the partition layout, and it is reversible at runtime.",
+      "evidence": [
+        "memory.total_mib=15360",
+        "memory.tier=standard"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "rollback": {
+        "action": "remove_config",
+        "target": "zram",
+        "value": null
+      },
+      "apply_stage": "runtime",
+      "packages": [
+        "zram-generator"
+      ],
+      "source": "fedora",
+      "notes": [
+        "Fedora ships the writeback/priority defaults in zram-generator-defaults."
+      ]
+    },
+    {
+      "id": "packages-intel-graphics",
+      "category": "packages",
+      "title": "Package set: intel-graphics",
+      "status": "plan",
+      "target": "packages.intel-graphics",
+      "value": [
+        "mesa-dri-drivers",
+        "intel-gpu-firmware"
+      ],
+      "current_value": null,
+      "already_satisfied": false,
+      "rationale": "Mesa userspace drivers and GuC/HuC/DMC firmware for Intel graphics. Needed because the i915 graphics driver is bound.",
+      "evidence": [
+        "profile matched package set intel-graphics"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "rollback": {
+        "action": "remove_packages",
+        "target": "intel-graphics",
+        "value": [
+          "mesa-dri-drivers",
+          "intel-gpu-firmware"
+        ]
+      },
+      "apply_stage": "runtime",
+      "packages": [
+        "mesa-dri-drivers",
+        "intel-gpu-firmware"
+      ],
+      "source": "fedora",
+      "notes": []
+    },
+    {
+      "id": "packages-intel-wifi",
+      "category": "packages",
+      "title": "Package set: intel-wifi",
+      "status": "plan",
+      "target": "packages.intel-wifi",
+      "value": [
+        "iwlwifi-mvm-firmware"
+      ],
+      "current_value": null,
+      "already_satisfied": false,
+      "rationale": "Firmware required by the iwlwifi driver for Intel wireless adapters. Needed because an Intel wireless adapter is present.",
+      "evidence": [
+        "profile matched package set intel-wifi"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "rollback": {
+        "action": "remove_packages",
+        "target": "intel-wifi",
+        "value": [
+          "iwlwifi-mvm-firmware"
+        ]
+      },
+      "apply_stage": "runtime",
+      "packages": [
+        "iwlwifi-mvm-firmware"
+      ],
+      "source": "fedora",
+      "notes": []
+    },
+    {
+      "id": "packages-power-management-laptop",
+      "category": "packages",
+      "title": "Package set: power-management-laptop",
+      "status": "plan",
+      "target": "packages.power-management-laptop",
+      "value": [
+        "power-profiles-daemon"
+      ],
+      "current_value": null,
+      "already_satisfied": false,
+      "rationale": "Exposes the ACPI platform profile through a supported D-Bus interface. Needed because the hybrid-graphics-laptop profile requires it.",
+      "evidence": [
+        "profile matched package set power-management-laptop"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "rollback": {
+        "action": "remove_packages",
+        "target": "power-management-laptop",
+        "value": [
+          "power-profiles-daemon"
+        ]
+      },
+      "apply_stage": "runtime",
+      "packages": [
+        "power-profiles-daemon"
+      ],
+      "source": "fedora",
+      "notes": []
+    },
+    {
+      "id": "packages-sof-audio",
+      "category": "packages",
+      "title": "Package set: sof-audio",
+      "status": "plan",
+      "target": "packages.sof-audio",
+      "value": [
+        "alsa-sof-firmware"
+      ],
+      "current_value": null,
+      "already_satisfied": false,
+      "rationale": "Sound Open Firmware topology and firmware for Intel laptops. Needed because an Intel laptop with an HDA/SOF audio device.",
+      "evidence": [
+        "profile matched package set sof-audio"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "rollback": {
+        "action": "remove_packages",
+        "target": "sof-audio",
+        "value": [
+          "alsa-sof-firmware"
+        ]
+      },
+      "apply_stage": "runtime",
+      "packages": [
+        "alsa-sof-firmware"
+      ],
+      "source": "fedora",
+      "notes": []
+    },
+    {
+      "id": "cpu-energy-performance",
+      "category": "power",
+      "title": "Energy performance preference",
+      "status": "keep",
+      "target": "cpufreq.energy_performance_preference",
+      "value": "balance_performance",
+      "current_value": "balance_performance",
+      "already_satisfied": true,
+      "rationale": "EPP is the supported interface for trading energy against performance; the balanced policy uses 'balance_performance'. The system is already using this value.",
+      "evidence": [
+        "power.energy_performance_preferences=['default', 'performance', 'balance_performance', 'balance_power', 'power']"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "rollback": {
+        "action": "write",
+        "target": "cpufreq.energy_performance_preference",
+        "value": "balance_performance"
+      },
+      "apply_stage": "runtime",
+      "packages": [],
+      "source": "fedora",
+      "notes": []
+    },
+    {
+      "id": "platform-profile",
+      "category": "power",
+      "title": "ACPI platform profile",
+      "status": "keep",
+      "target": "platform_profile",
+      "value": "balanced",
+      "current_value": "balanced",
+      "already_satisfied": true,
+      "rationale": "The firmware platform profile lets the vendor's embedded controller implement the balanced policy. The system is already using this value.",
+      "evidence": [
+        "power.platform_profile_choices=['low-power', 'balanced', 'performance']"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "rollback": {
+        "action": "write",
+        "target": "platform_profile",
+        "value": "balanced"
+      },
+      "apply_stage": "runtime",
+      "packages": [],
+      "source": "fedora",
+      "notes": []
+    },
+    {
+      "id": "storage-trim",
+      "category": "storage",
+      "title": "Scheduled TRIM",
+      "status": "plan",
+      "target": "services.fstrim.timer",
+      "value": "enabled",
+      "current_value": null,
+      "already_satisfied": false,
+      "rationale": "TRIM keeps write performance predictable on SSDs/NVMe and is scheduled weekly so it does not compete with interactive use.",
+      "evidence": [
+        "storage.primary=ssd",
+        "storage.transports=['nvme']"
+      ],
+      "risk": "low",
+      "reversible": true,
+      "rollback": {
+        "action": "disable_service",
+        "target": "fstrim.timer",
+        "value": "enabled"
+      },
+      "apply_stage": "runtime",
+      "packages": [],
+      "source": "fedora",
+      "notes": []
+    }
+  ],
+  "notices": [
+    "Some collectors could not read data: memory.modules."
+  ],
+  "fallback": {
+    "baseline_profile": "generic-x86-64",
+    "baseline_policy": "balanced",
+    "applies_when": [
+      "no profile rule matches the machine",
+      "the plan fails validation",
+      "the kernel or firmware rejects a runtime change"
+    ],
+    "description": "Re-run the planner with the generic profile and balanced policy. Every decision records its inverse so the previous values can be restored."
+  },
+  "summary": {
+    "total": 11,
+    "by_status": {
+      "keep": 4,
+      "manual": 1,
+      "plan": 6,
+      "skip": 0
+    },
+    "packages": [
+      "alsa-sof-firmware",
+      "intel-gpu-firmware",
+      "iwlwifi-mvm-firmware",
+      "mesa-dri-drivers",
+      "power-profiles-daemon",
+      "zram-generator"
+    ],
+    "all_reversible": true
+  }
+}

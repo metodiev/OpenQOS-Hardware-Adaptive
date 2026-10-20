@@ -12,10 +12,15 @@ from openqos.errors import SchemaError
 def hardware_schema_path(version: str | None = None) -> Path:
     """Return the filesystem path of the bundled hardware inventory schema."""
     version = version or HARDWARE_SCHEMA_VERSION
-    resource = resources.files("openqos.schemas").joinpath(f"hardware-inventory-{version}.json")
+    return schema_path(f"hardware-inventory-{version}.json")
+
+
+def schema_path(filename: str) -> Path:
+    """Return the filesystem path of a bundled schema by file name."""
+    resource = resources.files("openqos.schemas").joinpath(filename)
     path = Path(str(resource))
     if not path.is_file():
-        raise SchemaError(f"no bundled hardware schema for version {version!r}")
+        raise SchemaError(f"no bundled schema named {filename!r}")
     return path
 
 

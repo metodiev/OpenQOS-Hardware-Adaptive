@@ -154,6 +154,10 @@ def build_image(
     output_dir = Path(environment["output_directory"])
     work_dir = Path(environment["work_directory"])
 
+    # Capture provenance before the long build: the tree can change while it runs.
+    revision = source_revision(project_root, runner=runner)
+    package_versions = installed_package_versions(runner=runner)
+
     clone_descriptions(description_dir, runner=runner)
     changed = apply_overlay(description_dir, project_root / "image" / "overlay", project_root)
 
@@ -167,8 +171,8 @@ def build_image(
     manifest = build_manifest(
         artifact,
         plan=plan,
-        package_versions=installed_package_versions(runner=runner),
-        source_revision=source_revision(project_root, runner=runner),
+        package_versions=package_versions,
+        source_revision=revision,
     )
     manifest["overlay_files"] = [_relative_or_absolute(item, project_root) for item in changed]
 

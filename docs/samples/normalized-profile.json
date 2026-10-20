@@ -1,0 +1,137 @@
+{
+  "schema_version": "1.0.0",
+  "source_inventory": {
+    "schema_version": "1.0.0",
+    "generated_at": "2026-10-20T11:31:36+00:00",
+    "privacy_mode": true
+  },
+  "machine": {
+    "form_factor": "laptop",
+    "is_virtual_machine": false,
+    "firmware": {
+      "boot_mode": "uefi",
+      "secure_boot": "enabled"
+    },
+    "os": {
+      "id": "fedora",
+      "version_id": "44"
+    },
+    "architecture": "AMD64"
+  },
+  "cpu": {
+    "vendor": "intel",
+    "vendors_raw": [
+      "GenuineIntel"
+    ],
+    "model": "12th Gen Intel(R) Core(TM) i7-1260P",
+    "logical_cpus": 8,
+    "physical_cores": 4,
+    "threads_per_core": 2,
+    "sockets": 1,
+    "cpufreq_driver": "intel_pstate",
+    "numa_nodes": null,
+    "features": {
+      "avx2": true,
+      "avx512f": true,
+      "aes": true,
+      "virt_host": false
+    }
+  },
+  "memory": {
+    "total_mib": 15360,
+    "tier": "standard",
+    "swap_total_mib": 8192,
+    "has_swap": true
+  },
+  "graphics": {
+    "adapter_count": 2,
+    "adapters": [
+      {
+        "vendor_id": "8086",
+        "driver": "i915",
+        "memory_mib": null,
+        "kind": "integrated"
+      },
+      {
+        "vendor_id": "10de",
+        "driver": "nvidia",
+        "memory_mib": 4096,
+        "kind": "discrete"
+      }
+    ],
+    "hybrid": true,
+    "vendor_ids": [
+      "10de",
+      "8086"
+    ],
+    "drivers": [
+      "i915",
+      "nvidia"
+    ],
+    "primary_driver": "i915",
+    "requires_third_party_driver": true
+  },
+  "storage": {
+    "devices": [
+      {
+        "name": "nvme0n1",
+        "transport": "nvme",
+        "rotational": false,
+        "removable": false,
+        "size_gib": 476.93
+      }
+    ],
+    "device_count": 1,
+    "primary": "ssd",
+    "transports": [
+      "nvme"
+    ],
+    "has_nvme": true,
+    "has_removable": false
+  },
+  "network": {
+    "interface_count": 2,
+    "wired": true,
+    "wireless": true,
+    "drivers": [
+      "e1000e",
+      "iwlwifi"
+    ]
+  },
+  "power": {
+    "has_battery": true,
+    "battery_count": 1,
+    "governor": "powersave",
+    "energy_performance_preference": "balance_performance",
+    "platform_profile": "balanced",
+    "platform_profile_supported": true,
+    "platform_profile_choices": [
+      "low-power",
+      "balanced",
+      "performance"
+    ],
+    "governors": [
+      "performance",
+      "powersave"
+    ],
+    "energy_performance_preferences": [
+      "default",
+      "performance",
+      "balance_performance",
+      "balance_power",
+      "power"
+    ]
+  },
+  "audio": {
+    "card_count": 1
+  },
+  "peripherals": {
+    "bluetooth_adapters": 1,
+    "cameras": 1,
+    "input_devices": 2
+  },
+  "unavailable": [
+    "memory.modules"
+  ],
+  "warning_count": 0
+}

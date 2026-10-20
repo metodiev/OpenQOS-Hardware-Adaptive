@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openqos.invalid/schemas/hardware-profile-1.0.0.json",
+  "title": "OpenQOS normalised hardware profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_inventory",
+    "machine",
+    "cpu",
+    "memory",
+    "graphics",
+    "storage",
+    "network",
+    "power",
+    "audio",
+    "peripherals",
+    "unavailable",
+    "warning_count"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "source_inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "generated_at", "privacy_mode"],
+      "properties": {
+        "schema_version": { "type": "string" },
+        "generated_at": { "type": ["string", "null"] },
+        "privacy_mode": { "type": "boolean" }
+      }
+    },
+    "machine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["form_factor", "is_virtual_machine", "firmware", "os", "architecture"],
+      "properties": {
+        "form_factor": { "enum": ["laptop", "desktop", "unknown"] },
+        "is_virtual_machine": { "type": "boolean" },
+        "firmware": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["boot_mode", "secure_boot"],
+          "properties": {
+            "boot_mode": { "type": "string" },
+            "secure_boot": { "type": "string" }
+          }
+        },
+        "os": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "version_id"],
+          "properties": {
+            "id": { "type": ["string", "null"] },
+            "version_id": { "type": ["string", "null"] }
+          }
+        },
+        "architecture": { "type": ["string", "null"] }
+      }
+    },
+    "cpu": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "vendor",
+        "vendors_raw",
+        "model",
+        "logical_cpus",
+        "physical_cores",
+        "threads_per_core",
+        "sockets",
+        "cpufreq_driver",
+        "numa_nodes",
+        "features"
+      ],
+      "properties": {
+        "vendor": { "enum": ["intel", "amd", "other", "unknown"] },
+        "vendors_raw": { "type": "array", "items": { "type": "string" } },
+        "model": { "type": ["string", "null"] },
+        "logical_cpus": { "type": "integer", "minimum": 0 },
+        "physical_cores": { "type": ["integer", "null"] },
+        "threads_per_core": { "type": ["integer", "null"] },
+        "sockets": { "type": ["integer", "null"] },
+        "cpufreq_driver": { "type": ["string", "null"] },
+        "numa_nodes": { "type": ["integer", "null"] },
+        "features": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["avx2", "avx512f", "aes", "virt_host"],
+          "properties": {
+            "avx2": { "type": "boolean" },
+            "avx512f": { "type": "boolean" },
+            "aes": { "type": "boolean" },
+            "virt_host": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_mib", "tier", "swap_total_mib", "has_swap"],
+      "properties": {
+        "total_mib": { "type": "integer", "minimum": 0 },
+        "tier": { "enum": ["low", "standard", "high", "unknown"] },
+        "swap_total_mib": { "type": "integer", "minimum": 0 },
+        "has_swap": { "type": "boolean" }
+      }
+    },
+    "graphics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapter_count",
+        "adapters",
+        "hybrid",
+        "vendor_ids",
+        "drivers",
+        "primary_driver",
+        "requires_third_party_driver"
+      ],
+      "properties": {
+        "adapter_count": { "type": "integer", "minimum": 0 },
+        "adapters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["vendor_id", "driver", "memory_mib", "kind"],
+            "properties": {
+              "vendor_id": { "type": ["string", "null"] },
+              "driver": { "type": ["string", "null"] },
+              "memory_mib": { "type": ["integer", "null"] },
+              "kind": { "enum": ["integrated", "discrete", "unknown"] }
+            }
+          }
+        },
+        "hybrid": { "type": "boolean" },
+        "vendor_ids": { "type": "array", "items": { "type": "string" } },
+        "drivers": { "type": "array", "items": { "type": "string" } },
+        "primary_driver": { "type": ["string", "null"] },
+        "requires_third_party_driver": { "type": "boolean" }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "devices",
+        "device_count",
+        "primary",
+        "transports",
+        "has_nvme",
+        "has_removable"
+      ],
+      "properties": {
+        "devices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "transport", "rotational", "removable", "size_gib"],
+            "properties": {
+              "name": { "type": ["string", "null"] },
+              "transport": { "type": "string" },
+              "rotational": { "type": ["boolean", "null"] },
+              "removable": { "type": ["boolean", "null"] },
+              "size_gib": { "type": ["number", "null"] }
+            }
+          }
+        },
+        "device_count": { "type": "integer", "minimum": 0 },
+        "primary": { "enum": ["ssd", "hdd", "unknown"] },
+        "transports": { "type": "array", "items": { "type": "string" } },
+        "has_nvme": { "type": "boolean" },
+        "has_removable": { "type": "boolean" }
+      }
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["interface_count", "wired", "wireless", "drivers"],
+      "properties": {
+        "interface_count": { "type": "integer", "minimum": 0 },
+        "wired": { "type": "boolean" },
+        "wireless": { "type": "boolean" },
+        "drivers": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "power": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "has_battery",
+        "battery_count",
+        "governor",
+        "energy_performance_preference",
+        "platform_profile",
+        "platform_profile_supported",
+        "platform_profile_choices",
+        "governors",
+        "energy_performance_preferences"
+      ],
+      "properties": {
+        "has_battery": { "type": "boolean" },
+        "battery_count": { "type": "integer", "minimum": 0 },
+        "governor": { "type": ["string", "null"] },
+        "energy_performance_preference": { "type": ["string", "null"] },
+        "platform_profile": { "type": ["string", "null"] },
+        "platform_profile_supported": { "type": "boolean" },
+        "platform_profile_choices": { "type": "array", "items": { "type": "string" } },
+        "governors": { "type": "array", "items": { "type": "string" } },
+        "energy_performance_preferences": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "audio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["card_count"],
+      "properties": { "card_count": { "type": "integer", "minimum": 0 } }
+    },
+    "peripherals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bluetooth_adapters", "cameras", "input_devices"],
+      "properties": {
+        "bluetooth_adapters": { "type": "integer", "minimum": 0 },
+        "cameras": { "type": "integer", "minimum": 0 },
+        "input_devices": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "unavailable": { "type": "array", "items": { "type": "string" } },
+    "warning_count": { "type": "integer", "minimum": 0 }
+  }
+}

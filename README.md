@@ -22,8 +22,8 @@ anything that could modify a machine.
 | Versioned JSON schema + validator (`openqos hardware validate`) | **Implemented** |
 | ISO build plan and preflight (`openqos image plan/build`) | **Implemented** |
 | ISO build execution on Fedora (KIWI overlay) | **Verified** — `releases/openqos-generic-44.iso`, booted under BIOS and UEFI |
-| Hardware profile / compatibility database | Planned (Phase 2) |
-| Optimization engine | Planned (Phase 2) |
+| Hardware profile + compatibility rules (`openqos profile`) | **Implemented** (Phase 2) |
+| Optimization planner (`openqos optimize`) | **Implemented** — plan only, nothing applied |
 | Installer | Planned (Phase 3) |
 | Runtime adaptation service | Planned (Phase 4) |
 | Benchmarks | Planned (Phase 5) |
@@ -45,7 +45,7 @@ python -m venv .venv
 . .venv/bin/activate            # Windows: .venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 
-pytest                          # 67 tests
+pytest                          # 101 tests
 ruff check .
 mypy
 ```
@@ -107,6 +107,18 @@ openqos image build                # preflight + plan, changes nothing
 `image build` only performs the build with `--execute`, and only after all
 required preflight checks pass. See [docs/iso-building.md](docs/iso-building.md).
 
+### Build a profile and an optimization plan
+
+```bash
+openqos hardware scan --privacy --output inventory.json
+openqos profile explain --inventory inventory.json
+openqos profile build   --inventory inventory.json --output profile.json
+openqos optimize        --inventory inventory.json --policy balanced --format json
+```
+
+The planner explains every decision and never applies anything. See
+[docs/profiles-and-optimization.md](docs/profiles-and-optimization.md).
+
 ## Repository layout
 
 ```
@@ -134,6 +146,7 @@ scripts/                maintenance helpers (sample inventory generation)
 * [Architecture](docs/architecture.md)
 * [Development environment](docs/development-environment.md)
 * [Hardware support and detection limits](docs/hardware-support.md)
+* [Profiles and optimization](docs/profiles-and-optimization.md)
 * [ISO building](docs/iso-building.md)
 * [Security model](docs/security.md)
 * [Contributing](CONTRIBUTING.md)

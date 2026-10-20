@@ -25,3 +25,11 @@ class SchemaValidationUnavailableError(SchemaError):
 
 class ImageBuildError(OpenQOSError):
     """Raised when an image build cannot be prepared or completed."""
+
+
+class ProfileError(OpenQOSError):
+    """Raised when a hardware profile cannot be built or matched."""
+
+
+class OptimizationError(OpenQOSError):
+    """Raised when an optimization plan cannot be produced."""

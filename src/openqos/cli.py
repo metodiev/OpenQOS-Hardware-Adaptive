@@ -15,8 +15,19 @@ from openqos.hardware.scanner import scan
 from openqos.hardware.validate import load_document, validate_document
 from openqos.imagebuilder.build import build_image
 from openqos.imagebuilder.manifest import build_manifest, verify_iso
-from openqos.imagebuilder.plan import build_plan, render_plan
+from openqos.imagebuilder.plan import build_plan as build_image_plan
+from openqos.imagebuilder.plan import render_plan as render_image_plan
 from openqos.imagebuilder.preflight import required_failures, run_preflight
+from openqos.optimizer.engine import build_plan as build_optimization_plan
+from openqos.optimizer.engine import render_plan as render_optimization_plan
+from openqos.optimizer.validate import (
+    load_json,
+    validate_plan_or_raise,
+    validate_profile_document,
+    validate_profile_or_raise,
+)
+from openqos.profiles.model import build_profile
+from openqos.profiles.rules import load_ruleset, match_profile
 from openqos.schemas import available_hardware_schema_versions, hardware_schema_path
 
 
@@ -97,6 +108,33 @@ def build_parser() -> argparse.ArgumentParser:
     verify_parser.add_argument("--profile", default="generic")
     verify_parser.add_argument("--output", "-o", type=Path, default=None)
 
+    profile = subparsers.add_parser("profile", help="hardware profile commands")
+    profile_sub = profile.add_subparsers(dest="profile_command", required=True)
+
+    profile_build = profile_sub.add_parser("build", help="build a normalised profile")
+    profile_build.add_argument("--inventory", "-i", type=Path, required=True)
+    profile_build.add_argument("--output", "-o", type=Path, default=None)
+
+    profile_explain = profile_sub.add_parser(
+        "explain", help="show which profile rules matched and why"
+    )
+    profile_explain.add_argument("--inventory", "-i", type=Path, required=True)
+    profile_explain.add_argument("--output", "-o", type=Path, default=None)
+
+    profile_validate = profile_sub.add_parser("validate", help="validate a profile file")
+    profile_validate.add_argument("file", type=Path)
+
+    optimize = subparsers.add_parser("optimize", help="produce an optimization plan")
+    optimize.add_argument("--inventory", "-i", type=Path, required=True)
+    optimize.add_argument(
+        "--policy",
+        default="balanced",
+        choices=("balanced", "performance", "power-saving"),
+        help="optimization policy (default: balanced)",
+    )
+    optimize.add_argument("--output", "-o", type=Path, default=None)
+    optimize.add_argument("--format", choices=("json", "text"), default="text")
+
     return parser
 
 
@@ -108,6 +146,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_hardware(args)
         if args.command == "image":
             return _run_image(args)
+        if args.command == "profile":
+            return _run_profile(args)
+        if args.command == "optimize":
+            return _run_optimize(args)
     except OpenQOSError as error:
         print(f"openqos: error: {error}", file=sys.stderr)
         return 2
@@ -184,8 +226,12 @@ def _run_image(args: argparse.Namespace) -> int:
 
 
 def _image_plan(args: argparse.Namespace) -> int:
-    plan = build_plan(profile=args.profile)
-    payload = json.dumps(plan, indent=2) + "\n" if args.format == "json" else render_plan(plan)
+    plan = build_image_plan(profile=args.profile)
+    payload = (
+        json.dumps(plan, indent=2) + "\n"
+        if args.format == "json"
+        else render_image_plan(plan)
+    )
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(payload, encoding="utf-8")
@@ -196,7 +242,7 @@ def _image_plan(args: argparse.Namespace) -> int:
 
 
 def _image_build(args: argparse.Namespace) -> int:
-    plan = build_plan(profile=args.profile, work_directory=str(args.work_directory))
+    plan = build_image_plan(profile=args.profile, work_directory=str(args.work_directory))
     args.work_directory.mkdir(parents=True, exist_ok=True)
 
     print("preflight:")
@@ -207,7 +253,7 @@ def _image_build(args: argparse.Namespace) -> int:
 
     failures = required_failures(checks)
     if not args.execute:
-        sys.stdout.write("\n" + render_plan(plan))
+        sys.stdout.write("\n" + render_image_plan(plan))
         if failures:
             print(
                 "not ready to build: resolve the failing checks above, then re-run with --execute",
@@ -238,8 +284,102 @@ def _image_build(args: argparse.Namespace) -> int:
 
 def _image_verify(args: argparse.Namespace) -> int:
     artifact = verify_iso(args.iso)
-    manifest = build_manifest(artifact, plan=build_plan(profile=args.profile))
+    manifest = build_manifest(artifact, plan=build_image_plan(profile=args.profile))
     payload = json.dumps(manifest, indent=2) + "\n"
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(payload, encoding="utf-8")
+        print(f"wrote {args.output}")
+    else:
+        sys.stdout.write(payload)
+    return 0
+
+
+def _run_profile(args: argparse.Namespace) -> int:
+    if args.profile_command == "build":
+        inventory = load_document(args.inventory)
+        profile = build_profile(inventory)
+        validate_profile_or_raise(profile)
+        payload = json.dumps(profile, indent=2) + "\n"
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(payload, encoding="utf-8")
+            print(f"wrote {args.output}")
+        else:
+            sys.stdout.write(payload)
+        return 0
+
+    if args.profile_command == "explain":
+        inventory = load_document(args.inventory)
+        profile = build_profile(inventory)
+        matched = match_profile(profile, load_ruleset())
+        text = _render_match(profile, matched)
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(text, encoding="utf-8")
+            print(f"wrote {args.output}")
+        else:
+            sys.stdout.write(text)
+        return 0
+
+    if args.profile_command == "validate":
+        document = load_json(args.file)
+        problems = validate_profile_document(document)
+        if problems:
+            for problem in problems:
+                print(f"{args.file}: {problem}", file=sys.stderr)
+            return 1
+        print(f"{args.file}: valid hardware profile ({document['schema_version']})")
+        return 0
+    raise OpenQOSError(f"unknown profile command {args.profile_command!r}")
+
+
+def _render_match(profile: dict[str, Any], matched: dict[str, Any]) -> str:
+    machine = profile.get("machine") or {}
+    cpu = profile.get("cpu") or {}
+    lines = [
+        f"profile      : {matched['profile_id']} (priority {matched['priority']}"
+        f"{', fallback' if matched['fallback'] else ''})",
+        f"description  : {matched['description']}",
+        f"machine      : {machine.get('form_factor')} / {cpu.get('vendor')} "
+        f"/ {cpu.get('model') or 'unknown cpu'}",
+        f"rules        : revision {matched['rules_revision']}",
+        "",
+        "matched conditions:",
+    ]
+    lines.extend(
+        f"  + {condition}" for condition in (matched["matched_conditions"] or ["(none)"])
+    )
+    rejected = [
+        entry for entry in matched["evaluated_rules"] if not entry["matched"]
+    ]
+    if rejected:
+        lines.append("")
+        lines.append("not matched:")
+        for entry in rejected:
+            failed = entry["conditions"][-1] if entry["conditions"] else "no conditions"
+            lines.append(f"  - {entry['rule']}: {failed}")
+    if matched["package_sets"]:
+        lines.append("")
+        lines.append("package sets: " + ", ".join(matched["package_sets"]))
+    if matched["notes"]:
+        lines.append("")
+        lines.append("notes:")
+        lines.extend(f"  - {note}" for note in matched["notes"])
+    return "\n".join(lines) + "\n"
+
+
+def _run_optimize(args: argparse.Namespace) -> int:
+    inventory = load_document(args.inventory)
+    profile = build_profile(inventory)
+    validate_profile_or_raise(profile)
+    plan = build_optimization_plan(profile, policy=args.policy)
+    validate_plan_or_raise(plan)
+    payload = (
+        json.dumps(plan, indent=2) + "\n"
+        if args.format == "json"
+        else render_optimization_plan(plan)
+    )
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(payload, encoding="utf-8")

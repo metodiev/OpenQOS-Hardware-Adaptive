@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openqos.invalid/schemas/optimization-plan-1.0.0.json",
+  "title": "OpenQOS optimization plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "policy",
+    "policy_description",
+    "policy_revision",
+    "selected_profile",
+    "decisions",
+    "notices",
+    "fallback",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "generated_at": { "type": "string" },
+    "policy": { "type": "string" },
+    "policy_description": { "type": ["string", "null"] },
+    "policy_revision": { "type": ["string", "null"] },
+    "selected_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profile_id",
+        "description",
+        "priority",
+        "fallback",
+        "matched_conditions",
+        "evaluated_rules",
+        "package_sets",
+        "notes",
+        "default_policy",
+        "rules_revision"
+      ],
+      "properties": {
+        "profile_id": { "type": "string" },
+        "description": { "type": "string" },
+        "priority": { "type": "integer" },
+        "fallback": { "type": "boolean" },
+        "matched_conditions": { "type": "array", "items": { "type": "string" } },
+        "evaluated_rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["rule", "matched", "conditions"],
+            "properties": {
+              "rule": { "type": "string" },
+              "matched": { "type": "boolean" },
+              "conditions": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "package_sets": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": "array", "items": { "type": "string" } },
+        "default_policy": { "type": "string" },
+        "rules_revision": { "type": "string" }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "category",
+          "title",
+          "status",
+          "target",
+          "value",
+          "current_value",
+          "already_satisfied",
+          "rationale",
+          "evidence",
+          "risk",
+          "reversible",
+          "rollback",
+          "apply_stage",
+          "packages",
+          "source",
+          "notes"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "category": {
+            "enum": ["cpu", "power", "memory", "storage", "graphics", "packages"]
+          },
+          "title": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["plan", "keep", "skip", "manual"] },
+          "target": { "type": "string", "minLength": 1 },
+          "value": {},
+          "current_value": {},
+          "already_satisfied": { "type": "boolean" },
+          "rationale": { "type": "string", "minLength": 1 },
+          "evidence": { "type": "array", "items": { "type": "string" } },
+          "risk": { "enum": ["low", "medium", "high"] },
+          "reversible": { "type": "boolean" },
+          "rollback": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": ["action", "target", "value"],
+            "properties": {
+              "action": { "type": "string" },
+              "target": { "type": "string" },
+              "value": {}
+            }
+          },
+          "apply_stage": { "enum": ["install", "runtime"] },
+          "packages": { "type": "array", "items": { "type": "string" } },
+          "source": { "enum": ["fedora", "third-party", "manual"] },
+          "notes": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "notices": { "type": "array", "items": { "type": "string" } },
+    "fallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseline_profile", "baseline_policy", "applies_when", "description"],
+      "properties": {
+        "baseline_profile": { "type": "string" },
+        "baseline_policy": { "type": "string" },
+        "applies_when": { "type": "array", "items": { "type": "string" } },
+        "description": { "type": "string" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "by_status", "packages", "all_reversible"],
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "by_status": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["keep", "manual", "plan", "skip"],
+          "properties": {
+            "keep": { "type": "integer", "minimum": 0 },
+            "manual": { "type": "integer", "minimum": 0 },
+            "plan": { "type": "integer", "minimum": 0 },
+            "skip": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "packages": { "type": "array", "items": { "type": "string" } },
+        "all_reversible": { "type": "boolean" }
+      }
+    }
+  }
+}

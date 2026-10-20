@@ -43,6 +43,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "openqos.schemas" = ["*.json"]
+"openqos.config" = ["*.json"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"

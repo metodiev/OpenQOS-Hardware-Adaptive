@@ -2,9 +2,13 @@
 
 ## Scope of this document
 
-This describes the architecture implemented in Phase 1 and the interfaces that
+This describes the architecture implemented so far and the interfaces that
 later phases build on. Components that do not exist yet are listed explicitly
 as planned.
+
+Phase 1 delivered the hardware inventory and the ISO pipeline; Phase 2 added the
+normalised profile, the data-driven compatibility rules, and the optimization
+planner (which produces plans but applies nothing).
 
 ## Component map
 
@@ -13,8 +17,8 @@ as planned.
 | Hardware discovery | `openqos.hardware` | Implemented (read-only) |
 | Inventory schema and validation | `openqos.schemas`, `openqos.hardware.validate` | Implemented |
 | Image builder | `openqos.imagebuilder` | Implemented and verified (built + boot-tested) |
-| Hardware profiles / compatibility DB | — | Planned |
-| Optimizer | — | Planned |
+| Hardware profiles and compatibility rules | `openqos.profiles` | Implemented (Phase 2) |
+| Optimization planner | `openqos.optimizer` | Implemented (Phase 2, plan only) |
 | Installer | — | Planned |
 | Runtime adaptation | — | Planned |
 | Benchmarks | — | Planned |

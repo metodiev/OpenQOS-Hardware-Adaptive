@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0.0",
+  "revision": "2026.10.1",
+  "policies": {
+    "balanced": {
+      "description": "Default policy: responsive under load without wasting energy at idle.",
+      "cpu": {
+        "governor": "powersave",
+        "energy_performance_preference": "balance_performance",
+        "platform_profile": "balanced"
+      },
+      "memory": { "swap": "zram", "zram_percent_of_ram": 50 },
+      "storage": { "trim": true },
+      "rationale": [
+        "powersave with balance_performance is the Fedora default on intel_pstate and amd-pstate-epp.",
+        "zram avoids disk I/O for short-lived memory pressure and needs no partitioning."
+      ]
+    },
+    "performance": {
+      "description": "Maximum sustained performance; higher idle power draw.",
+      "cpu": {
+        "governor": "performance",
+        "energy_performance_preference": "performance",
+        "platform_profile": "performance"
+      },
+      "memory": { "swap": "zram", "zram_percent_of_ram": 25 },
+      "storage": { "trim": true },
+      "rationale": [
+        "The performance governor removes frequency-scaling latency.",
+        "A smaller zram device keeps more RAM available to applications."
+      ]
+    },
+    "power-saving": {
+      "description": "Prioritise battery life and low temperatures.",
+      "cpu": {
+        "governor": "powersave",
+        "energy_performance_preference": "power",
+        "platform_profile": "low-power"
+      },
+      "memory": { "swap": "zram", "zram_percent_of_ram": 100 },
+      "storage": { "trim": true },
+      "rationale": [
+        "power EPP asks the hardware for the lowest energy state at each performance level.",
+        "A larger zram device reduces disk wake-ups when memory is tight."
+      ]
+    }
+  }
+}

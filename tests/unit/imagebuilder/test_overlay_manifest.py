@@ -239,6 +239,45 @@ def test_source_revision_marks_dirty_tree(tmp_path: Path) -> None:
     assert source_revision(tmp_path, runner=fake_runner) == "b" * 40 + "-dirty"
 
 
+def test_build_image_captures_provenance_before_building(tmp_path: Path) -> None:
+    from openqos.imagebuilder.build import build_image
+    from openqos.imagebuilder.plan import build_plan
+
+    work = tmp_path / "work"
+    description = work / "kiwi-descriptions"
+    (description / "components").mkdir(parents=True)
+    (description / "Fedora.kiwi").write_text(
+        '<image schemaversion="7.4" name="Fedora">\n'
+        '\t<packages type="bootstrap">\n\t\t<package name="filesystem"/>\n\t</packages>\n'
+        "</image>\n",
+        encoding="utf-8",
+    )
+    order: list[str] = []
+
+    def fake_runner(command, **kwargs):
+        if "rev-parse" in command:
+            order.append("rev-parse")
+            return SimpleNamespace(returncode=0, stdout="c" * 40 + "\n")
+        if command[0] == "./kiwi-build":
+            order.append("build")
+            output_arg = next(arg for arg in command if arg.startswith("--output-dir="))
+            output = Path(output_arg.split("=", 1)[1])
+            output.mkdir(parents=True, exist_ok=True)
+            _fake_iso(output / "x.iso")
+        if "status" in command:
+            return SimpleNamespace(returncode=0, stdout="")
+        return SimpleNamespace(returncode=0, stdout="")
+
+    manifest = build_image(
+        build_plan(work_directory=str(work)),
+        project_root=_PROJECT_ROOT,
+        releases_directory=tmp_path / "releases",
+        runner=fake_runner,
+    )
+    assert manifest["source_revision"] == "c" * 40
+    assert order.index("rev-parse") < order.index("build")
+
+
 def test_build_image_end_to_end_with_fake_runner(tmp_path: Path) -> None:
     from openqos.imagebuilder.build import build_image
     from openqos.imagebuilder.plan import build_plan
