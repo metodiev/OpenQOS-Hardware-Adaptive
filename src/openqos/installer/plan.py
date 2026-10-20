@@ -17,6 +17,11 @@ ESP_MIB = 600
 BOOT_MIB = 1024
 MINIMUM_ROOT_MIB = 4096
 
+#: Root filesystem written by the Kickstart. ``btrfs`` is deliberately not used:
+#: Anaconda 44 accepts the ``part`` line but skips ``mkfs.btrfs`` on a freshly
+#: initialised disk, leaving an unformatted root that cannot be mounted.
+ROOT_FSTYPE = "ext4"
+
 _KDE_GROUP = "kde-desktop-environment"
 
 #: Decisions that the Kickstart can apply without running custom code at boot.
@@ -68,7 +73,7 @@ def build_install_plan(
             "firmware": firmware.get("boot_mode"),
             "esp": {"mount": "/boot/efi", "fstype": "efi", "size_mib": ESP_MIB},
             "boot": {"mount": "/boot", "fstype": "ext4", "size_mib": BOOT_MIB},
-            "root": {"mount": "/", "fstype": "btrfs", "minimum_mib": MINIMUM_ROOT_MIB},
+            "root": {"mount": "/", "fstype": ROOT_FSTYPE, "minimum_mib": MINIMUM_ROOT_MIB},
             "swap": {
                 "strategy": "zram",
                 "zram_percent_of_ram": policy_memory.get("zram_percent_of_ram", 50),
@@ -196,7 +201,8 @@ def render_kickstart(plan: dict[str, Any]) -> str:
         f"clearpart --all --initlabel --drives={name}",
         f"part /boot/efi --fstype=efi --size={layout['esp']['size_mib']} --ondisk={name}",
         f"part /boot --fstype=ext4 --size={layout['boot']['size_mib']} --ondisk={name}",
-        f"part / --fstype=btrfs --grow --size={layout['root']['minimum_mib']} --ondisk={name}",
+        f"part / --fstype={layout['root']['fstype']} --grow "
+        f"--size={layout['root']['minimum_mib']} --ondisk={name}",
         f"bootloader --timeout={plan['bootloader']['timeout_seconds']}",
         "",
         "%packages",

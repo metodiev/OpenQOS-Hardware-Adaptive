@@ -55,11 +55,15 @@ points. OpenQOS never selects a disk automatically, and there is no
 | --- | --- | --- |
 | `/boot/efi` | `efi` | 600 MiB |
 | `/boot` | `ext4` | 1024 MiB |
-| `/` | `btrfs` | grows to fill the disk, minimum 4 GiB |
+| `/` | `ext4` | grows to fill the disk, minimum 4 GiB |
 | swap | `zram` (no partition) | per policy (default 50% of RAM) |
 
 * UEFI is required for the automated path; the bootloader entry is `grub2-efi`.
   A BIOS path (`grub2`) is selected when the inventory reports BIOS firmware.
+* The root filesystem is `ext4`. `btrfs` was the original default but Anaconda 44
+  accepts the `part / --fstype=btrfs` line and then skips `mkfs.btrfs` on a
+  freshly initialised disk, leaving an unmountable root. `ext4` is the layout
+  validated end to end.
 * Fedora keeps the previous kernels (`installonly_limit=3`), and the GRUB menu
   exposes them. That is the recovery boot path; nothing is removed from the
   bootloader configuration.
@@ -77,7 +81,7 @@ ignoredisk --only-use=nvme0n1
 clearpart --all --initlabel --drives=nvme0n1
 part /boot/efi --fstype=efi --size=600 --ondisk=nvme0n1
 part /boot --fstype=ext4 --size=1024 --ondisk=nvme0n1
-part / --fstype=btrfs --grow --size=4096 --ondisk=nvme0n1
+part / --fstype=ext4 --grow --size=4096 --ondisk=nvme0n1
 ...
 %packages
 @kde-desktop-environment

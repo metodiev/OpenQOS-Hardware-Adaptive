@@ -13,6 +13,7 @@ from openqos.errors import InstallError
 from openqos.hardware.scanner import scan
 from openqos.installer.disks import enumerate_disks
 from openqos.installer.plan import (
+    ROOT_FSTYPE,
     build_install_plan,
     render_kickstart,
     validate_install_plan,
@@ -122,6 +123,7 @@ def test_install_plan_contents(disk_tree: Path, tmp_path: Path) -> None:
     assert plan["target"]["confirmation_token"] == "sdb"  # noqa: S105
     assert plan["safety"]["requires_confirmation"] is True
     assert plan["layout"]["esp"]["size_mib"] == 600
+    assert plan["layout"]["root"]["fstype"] == "ext4"
     assert plan["layout"]["swap"]["strategy"] == "zram"
     assert plan["packages"]["groups"] == ["kde-desktop-environment"]
     assert "zram-generator" in plan["packages"]["packages"]
@@ -134,12 +136,21 @@ def test_kickstart_rendering(disk_tree: Path, tmp_path: Path) -> None:
     assert "ignoredisk --only-use=sdb" in text
     assert "clearpart --all --initlabel --drives=sdb" in text
     assert "part /boot/efi --fstype=efi --size=600 --ondisk=sdb" in text
-    assert "part / --fstype=btrfs --grow --size=4096 --ondisk=sdb" in text
+    assert "part / --fstype=ext4 --grow --size=4096 --ondisk=sdb" in text
     assert "@kde-desktop-environment" in text
     assert "systemctl enable openqos-scan.service" in text
     assert "systemctl enable fstrim.timer" in text
     assert "cp -a /opt/openqos/. \"$ANA_INSTALL_PATH/opt/openqos/\"" in text
     assert "reboot" in text
+
+
+def test_kickstart_root_filesystem_matches_plan(
+    disk_tree: Path, tmp_path: Path
+) -> None:
+    plan = _install_plan(disk_tree, tmp_path)
+    fstype = plan["layout"]["root"]["fstype"]
+    assert fstype == ROOT_FSTYPE == "ext4"
+    assert f"part / --fstype={fstype} --grow" in render_kickstart(plan)
 
 
 def test_rotational_target_skips_trim(tmp_path: Path, amd_desktop_tree: Path) -> None:
