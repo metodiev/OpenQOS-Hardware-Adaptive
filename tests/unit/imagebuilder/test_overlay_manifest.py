@@ -38,6 +38,9 @@ def test_apply_overlay_copies_sources_and_is_idempotent(tmp_path: Path) -> None:
     assert (description / "components" / "openqos.xml").is_file()
     assert (description / "root" / "usr" / "local" / "bin" / "openqos").is_file()
     assert (description / "root" / "opt" / "openqos" / "src" / "openqos" / "cli.py").is_file()
+    wrapper_bytes = (description / "root" / "usr" / "local" / "bin" / "openqos").read_bytes()
+    assert b"\r" not in wrapper_bytes
+    assert wrapper_bytes.startswith(b"#!/bin/sh\n")
 
     kiwi_text = (description / "Fedora.kiwi").read_text(encoding="utf-8")
     assert kiwi_text.count("components/openqos.xml") == 1
@@ -49,6 +52,28 @@ def test_apply_overlay_copies_sources_and_is_idempotent(tmp_path: Path) -> None:
     apply_overlay(description, overlay, _PROJECT_ROOT)
     assert (description / "Fedora.kiwi").read_text(encoding="utf-8").count("openqos.xml") == 1
     assert (description / "config.sh").read_text(encoding="utf-8") == config_before
+
+
+def test_apply_overlay_normalises_line_endings(tmp_path: Path) -> None:
+    description = _description(tmp_path)
+    overlay = tmp_path / "overlay"
+    (overlay / "components").mkdir(parents=True)
+    (overlay / "components" / "openqos.xml").write_bytes(b"<image>\r\n</image>\r\n")
+    (overlay / "root" / "usr" / "local" / "bin").mkdir(parents=True)
+    (overlay / "root" / "usr" / "local" / "bin" / "openqos").write_bytes(
+        b"#!/bin/sh\r\nexec true\r\n"
+    )
+    project = tmp_path / "project"
+    (project / "src" / "openqos").mkdir(parents=True)
+    (project / "src" / "openqos" / "__init__.py").write_bytes(b'"""x"""\r\n')
+
+    apply_overlay(description, overlay, project)
+
+    wrapper = description / "root" / "usr" / "local" / "bin" / "openqos"
+    assert wrapper.read_bytes() == b"#!/bin/sh\nexec true\n"
+    module = description / "root" / "opt" / "openqos" / "src" / "openqos" / "__init__.py"
+    assert module.read_bytes() == b'"""x"""\n'
+    assert b"\r\n" not in (description / "components" / "openqos.xml").read_bytes()
 
 
 def test_apply_overlay_requires_description(tmp_path: Path) -> None:

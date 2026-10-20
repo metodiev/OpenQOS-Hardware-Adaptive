@@ -29,7 +29,7 @@ def apply_overlay(description_dir: Path, overlay_dir: Path, project_root: Path) 
     if not component_source.is_file():
         raise ImageBuildError(f"missing overlay component {component_source}")
     component_target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(component_source, component_target)
+    _copy_normalised(component_source, component_target)
     changed.append(str(component_target))
 
     root_overlay = overlay_dir / "root"
@@ -39,16 +39,17 @@ def apply_overlay(description_dir: Path, overlay_dir: Path, project_root: Path) 
                 continue
             target = description_dir / "root" / source.relative_to(root_overlay)
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, target)
+            _copy_normalised(source, target)
             changed.append(str(target))
 
     release_marker = description_dir / "root" / "etc" / "openqos-release"
     release_marker.parent.mkdir(parents=True, exist_ok=True)
-    release_marker.write_text(
-        "OpenQOS live environment\n"
-        f"base=Fedora Linux {FEDORA_RELEASE}\n"
-        f"openqos={__version__}\n",
-        encoding="utf-8",
+    release_marker.write_bytes(
+        (
+            "OpenQOS live environment\n"
+            f"base=Fedora Linux {FEDORA_RELEASE}\n"
+            f"openqos={__version__}\n"
+        ).encode()
     )
     changed.append(str(release_marker))
     # Bind mounts and Windows hosts do not carry POSIX modes, so set them.
@@ -64,6 +65,7 @@ def apply_overlay(description_dir: Path, overlay_dir: Path, project_root: Path) 
         package_source,
         package_target,
         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+        copy_function=_copy_normalised,
     )
     _set_tree_modes(package_target)
     changed.append(str(package_target))
@@ -73,9 +75,28 @@ def apply_overlay(description_dir: Path, overlay_dir: Path, project_root: Path) 
         raise ImageBuildError(f"{kiwi_file} is missing from the description")
     content = kiwi_file.read_text(encoding="utf-8")
     if _KIWI_INCLUDE not in content:
-        kiwi_file.write_text(_append_include(content), encoding="utf-8")
+        kiwi_file.write_bytes(_append_include(content).encode("utf-8"))
         changed.append(str(kiwi_file))
     return changed
+
+
+def _copy_normalised(source: str | Path, target: str | Path) -> Path:
+    """Copy a file into the image, forcing LF line endings for text files.
+
+    A Windows checkout stores text files with CRLF. A shell script with a CRLF
+    shebang is not executable on Linux, so the image must not inherit the host
+    line endings.
+    """
+    source_path = Path(source)
+    target_path = Path(target)
+    data = source_path.read_bytes()
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        target_path.write_bytes(data)
+        return target_path
+    target_path.write_bytes(text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8"))
+    return target_path
 
 
 def _set_tree_modes(root: Path, *, executable: frozenset[str] | set[str] = frozenset()) -> None:

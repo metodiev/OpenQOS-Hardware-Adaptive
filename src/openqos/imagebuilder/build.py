@@ -100,7 +100,15 @@ def source_revision(project_root: Path, *, runner: Any = None) -> str | None:
         return None
 
     status = runner(
-        ["git", "-C", str(project_root), "status", "--porcelain"],
+        [
+            "git",
+            "-c",
+            "core.autocrlf=input",
+            "-C",
+            str(project_root),
+            "status",
+            "--porcelain",
+        ],
         check=False,
         text=True,
         stdout=subprocess.PIPE,

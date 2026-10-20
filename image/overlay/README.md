@@ -15,8 +15,10 @@ by `openqos image build`.
   contains exactly the sources from the revision that was built;
 * writes `root/etc/openqos-release` from the pinned Fedora release and the
   OpenQOS version;
-* normalises file modes (`0755` for the wrapper, `0644` otherwise), because the
-  sources may come from a Windows or bind-mounted checkout.
+* normalises file modes (`0755` for the wrapper, `0644` otherwise) and line
+  endings (LF for every text file), because the sources may come from a Windows
+  or bind-mounted checkout. A CRLF shebang would make the wrapper unrunnable in
+  the image.
 
 KIWI imports everything under a description's `root/` directory into the image
 root, so no post-install script is needed. Nothing here modifies the host

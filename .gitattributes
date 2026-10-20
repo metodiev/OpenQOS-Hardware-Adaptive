@@ -1,0 +1,8 @@
+# Keep line endings identical on every checkout. The image overlay contains a
+# shell script whose shebang must not end up as "#!/bin/sh\r".
+* text=auto eol=lf
+
+*.iso binary
+*.img binary
+*.fd binary
+*.png binary
