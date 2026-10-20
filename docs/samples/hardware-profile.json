@@ -1,0 +1,519 @@
+{
+  "schema_version": "1.0.0",
+  "generated_at": "2026-10-20T10:25:05+00:00",
+  "privacy_mode": true,
+  "tool": {
+    "name": "openqos",
+    "version": "0.1.0",
+    "python": "3.13.5"
+  },
+  "host": {
+    "hostname": null,
+    "os": {
+      "id": "fedora",
+      "version_id": "44",
+      "pretty_name": "Fedora Linux 44 (KDE Plasma Desktop Edition)",
+      "variant": "KDE Plasma Desktop Edition",
+      "build_id": "20260424.n.0",
+      "id_like": []
+    },
+    "kernel": {
+      "release": "6.16.3-200.fc44.x86_64",
+      "version": "Linux version 6.16.3-200.fc44.x86_64 (mockbuild@x86-64) #1 SMP",
+      "architecture": "AMD64",
+      "cmdline": null
+    },
+    "firmware": {
+      "boot_mode": "uefi",
+      "secure_boot": "enabled",
+      "setup_mode": "disabled"
+    },
+    "virtualization": {
+      "is_virtual_machine": false,
+      "hypervisor": null,
+      "vendor": null,
+      "product": null
+    }
+  },
+  "cpu": {
+    "architecture": "AMD64",
+    "vendors": [
+      "GenuineIntel"
+    ],
+    "model_name": "12th Gen Intel(R) Core(TM) i7-1260P",
+    "logical_cpus": 8,
+    "physical_cores": 4,
+    "sockets": 1,
+    "threads_per_core": 2,
+    "frequency_mhz": {
+      "min": 400,
+      "max": 4700
+    },
+    "cache": {
+      "l1d_kib": 48,
+      "l1i_kib": 32,
+      "l2u_kib": 1280,
+      "l3u_kib": 24576
+    },
+    "flags": [
+      "3dnowprefetch",
+      "abm",
+      "adx",
+      "aes",
+      "apic",
+      "avx",
+      "avx2",
+      "avx512bw",
+      "avx512cd",
+      "avx512dq",
+      "avx512f",
+      "avx512ifma",
+      "avx512vl",
+      "bmi1",
+      "bmi2",
+      "clflush",
+      "clwb",
+      "cmov",
+      "constant_tsc",
+      "cpuid",
+      "cx16",
+      "cx8",
+      "de",
+      "erms",
+      "f16c",
+      "fma",
+      "fpu",
+      "fsgsbase",
+      "fxsr",
+      "ht",
+      "ibpb",
+      "ibrs",
+      "ibrs_enhanced",
+      "invpcid",
+      "invpcid_single",
+      "lahf_lm",
+      "lm",
+      "mca",
+      "mce",
+      "mmx",
+      "movbe",
+      "msr",
+      "mtrr",
+      "nopl",
+      "nx",
+      "pae",
+      "pat",
+      "pcid",
+      "pclmulqdq",
+      "pdpe1gb",
+      "pge",
+      "pni",
+      "popcnt",
+      "pse",
+      "pse36",
+      "rdrand",
+      "rdseed",
+      "rdtscp",
+      "rep_good",
+      "sep",
+      "sha_ni",
+      "smap",
+      "smep",
+      "ss",
+      "ssbd",
+      "sse",
+      "sse2",
+      "sse4_1",
+      "sse4_2",
+      "ssse3",
+      "stibp",
+      "syscall",
+      "tsc",
+      "vme",
+      "x2apic",
+      "xgetbv1",
+      "xsave",
+      "xsavec",
+      "xsaveopt",
+      "xsaves",
+      "xtopology"
+    ],
+    "bugs": [
+      "spectre_v1",
+      "spectre_v2"
+    ],
+    "microcode": "0x191",
+    "numa_nodes": null,
+    "cpufreq_driver": "intel_pstate",
+    "per_cpu": [
+      {
+        "id": "cpu0",
+        "package_id": 0,
+        "core_id": 0,
+        "max_mhz": 4700,
+        "online": true
+      },
+      {
+        "id": "cpu1",
+        "package_id": 0,
+        "core_id": 0,
+        "max_mhz": 4700,
+        "online": true
+      },
+      {
+        "id": "cpu2",
+        "package_id": 0,
+        "core_id": 1,
+        "max_mhz": 4700,
+        "online": true
+      },
+      {
+        "id": "cpu3",
+        "package_id": 0,
+        "core_id": 1,
+        "max_mhz": 4700,
+        "online": true
+      },
+      {
+        "id": "cpu4",
+        "package_id": 0,
+        "core_id": 2,
+        "max_mhz": 4700,
+        "online": true
+      },
+      {
+        "id": "cpu5",
+        "package_id": 0,
+        "core_id": 2,
+        "max_mhz": 4700,
+        "online": true
+      },
+      {
+        "id": "cpu6",
+        "package_id": 0,
+        "core_id": 3,
+        "max_mhz": 4700,
+        "online": true
+      },
+      {
+        "id": "cpu7",
+        "package_id": 0,
+        "core_id": 3,
+        "max_mhz": 4700,
+        "online": true
+      }
+    ]
+  },
+  "memory": {
+    "total_kib": 15728640,
+    "free_kib": 4194304,
+    "available_kib": 10485760,
+    "buffers_kib": 524288,
+    "cached_kib": 5242880,
+    "swap_total_kib": 8388608,
+    "swap_free_kib": 8388608,
+    "total_mib": 15360,
+    "modules": []
+  },
+  "graphics": {
+    "adapter_count": 2,
+    "vendor_count": 2,
+    "hybrid_graphics": true,
+    "primary_adapter": "i915",
+    "adapters": [
+      {
+        "id": "pci:0000_00_02.0",
+        "slot": "0000:00:02.0",
+        "vendor_id": "8086",
+        "device_id": "46a6",
+        "class_code": "030000",
+        "category": "vga-compatible",
+        "driver": "i915",
+        "kernel_modules": [
+          "i915"
+        ],
+        "memory_mib": null
+      },
+      {
+        "id": "pci:0000_01_00.0",
+        "slot": "0000:01:00.0",
+        "vendor_id": "10de",
+        "device_id": "25a2",
+        "class_code": "030200",
+        "category": "3d-controller",
+        "driver": "nvidia",
+        "kernel_modules": [
+          "nvidia"
+        ],
+        "memory_mib": 4096
+      }
+    ]
+  },
+  "pci_devices": [
+    {
+      "id": "pci:0000_00_02.0",
+      "slot": "0000:00:02.0",
+      "vendor_id": "8086",
+      "device_id": "46a6",
+      "subsystem_vendor_id": "0000",
+      "subsystem_device_id": "0000",
+      "class_code": "030000",
+      "category": "vga-compatible",
+      "driver": "i915",
+      "driver_version": "1.0.0",
+      "kernel_modules": [
+        "i915"
+      ]
+    },
+    {
+      "id": "pci:0000_00_14.0",
+      "slot": "0000:00:14.0",
+      "vendor_id": "8086",
+      "device_id": "51ed",
+      "subsystem_vendor_id": "0000",
+      "subsystem_device_id": "0000",
+      "class_code": "0c0330",
+      "category": "usb-controller",
+      "driver": "xhci_hcd",
+      "driver_version": "1.0.0",
+      "kernel_modules": [
+        "xhci_hcd"
+      ]
+    },
+    {
+      "id": "pci:0000_00_14.3",
+      "slot": "0000:00:14.3",
+      "vendor_id": "8086",
+      "device_id": "51f0",
+      "subsystem_vendor_id": "0000",
+      "subsystem_device_id": "0000",
+      "class_code": "028000",
+      "category": "wifi-controller",
+      "driver": "iwlwifi",
+      "driver_version": "1.0.0",
+      "kernel_modules": [
+        "iwlwifi"
+      ]
+    },
+    {
+      "id": "pci:0000_00_1f.2",
+      "slot": "0000:00:1f.2",
+      "vendor_id": "8086",
+      "device_id": "51d3",
+      "subsystem_vendor_id": "0000",
+      "subsystem_device_id": "0000",
+      "class_code": "010601",
+      "category": "sata-controller",
+      "driver": "ahci",
+      "driver_version": "1.0.0",
+      "kernel_modules": [
+        "ahci"
+      ]
+    },
+    {
+      "id": "pci:0000_00_1f.3",
+      "slot": "0000:00:1f.3",
+      "vendor_id": "8086",
+      "device_id": "51c8",
+      "subsystem_vendor_id": "0000",
+      "subsystem_device_id": "0000",
+      "class_code": "040300",
+      "category": "audio-controller",
+      "driver": "snd_hda_intel",
+      "driver_version": "1.0.0",
+      "kernel_modules": [
+        "snd_hda_intel"
+      ]
+    },
+    {
+      "id": "pci:0000_01_00.0",
+      "slot": "0000:01:00.0",
+      "vendor_id": "10de",
+      "device_id": "25a2",
+      "subsystem_vendor_id": "17aa",
+      "subsystem_device_id": "22c2",
+      "class_code": "030200",
+      "category": "3d-controller",
+      "driver": "nvidia",
+      "driver_version": "1.0.0",
+      "kernel_modules": [
+        "nvidia"
+      ]
+    }
+  ],
+  "usb_devices": [
+    {
+      "id": "usb:1-3",
+      "bus_port": "1-3",
+      "vendor_id": "046d",
+      "device_id": "c52b",
+      "manufacturer": null,
+      "product": "USB Receiver",
+      "serial": null,
+      "driver": "usb",
+      "interfaces": []
+    },
+    {
+      "id": "usb:1-5",
+      "bus_port": "1-5",
+      "vendor_id": "5986",
+      "device_id": "2119",
+      "manufacturer": null,
+      "product": "Integrated Camera",
+      "serial": null,
+      "driver": "usb",
+      "interfaces": []
+    }
+  ],
+  "storage": [
+    {
+      "name": "nvme0n1",
+      "path": "/dev/nvme0n1",
+      "size_bytes": 512104857600,
+      "size_gib": 476.93,
+      "model": "SAMSUNG MZVL2512HCJQ-00BL7",
+      "serial": null,
+      "rotational": false,
+      "removable": false,
+      "optical": false,
+      "transport": "nvme",
+      "driver": "nvme",
+      "partitions": [
+        {
+          "name": "nvme0n1p1",
+          "path": "/dev/nvme0n1p1",
+          "size_bytes": 536870912
+        },
+        {
+          "name": "nvme0n1p2",
+          "path": "/dev/nvme0n1p2",
+          "size_bytes": 1073741824
+        },
+        {
+          "name": "nvme0n1p3",
+          "path": "/dev/nvme0n1p3",
+          "size_bytes": 510464000000
+        }
+      ]
+    }
+  ],
+  "network": [
+    {
+      "name": "enp0s31f6",
+      "type": "ethernet",
+      "mac_address": null,
+      "state": "down",
+      "speed_mbps": 1000,
+      "driver": "e1000e",
+      "firmware_version": null,
+      "pci_slot": null,
+      "virtual": false
+    },
+    {
+      "name": "wlan0",
+      "type": "wireless",
+      "mac_address": null,
+      "state": "up",
+      "speed_mbps": null,
+      "driver": "iwlwifi",
+      "firmware_version": "89.6fd758c1.0",
+      "pci_slot": "0000:00:14.3",
+      "virtual": false
+    }
+  ],
+  "audio": {
+    "cards": [
+      {
+        "name": "card0",
+        "id": "sofhdadsp",
+        "driver": null
+      }
+    ]
+  },
+  "bluetooth": [
+    {
+      "id": "hci0",
+      "address": null,
+      "type": "primary",
+      "bus": "usb"
+    }
+  ],
+  "cameras": [
+    {
+      "id": "video0",
+      "name": "Integrated Camera: Integrated C",
+      "driver": null
+    }
+  ],
+  "input_devices": [
+    {
+      "name": "AT Translated Set 2 keyboard",
+      "bus": "0011",
+      "vendor_id": "0001",
+      "product_id": "0001",
+      "handlers": [
+        "sysrq",
+        "kbd",
+        "leds",
+        "event0"
+      ]
+    },
+    {
+      "name": "SYNA8004:00 06CB:CE44 Touchpad",
+      "bus": "0018",
+      "vendor_id": "06cb",
+      "product_id": "ce44",
+      "handlers": [
+        "mouse0",
+        "event5"
+      ]
+    }
+  ],
+  "power": {
+    "batteries": [
+      {
+        "name": "BAT0",
+        "status": "Discharging",
+        "capacity_percent": 76,
+        "design_capacity_mwh": 57000,
+        "current_capacity_mwh": 43000,
+        "power_now_mw": 8100,
+        "cycle_count": 122,
+        "charge_control_end_threshold": 100
+      }
+    ],
+    "cpufreq": {
+      "driver": "intel_pstate",
+      "governor": "powersave",
+      "available_governors": [
+        "performance",
+        "powersave"
+      ],
+      "energy_performance_preference": "balance_performance",
+      "available_energy_performance_preferences": [
+        "default",
+        "performance",
+        "balance_performance",
+        "balance_power",
+        "power"
+      ],
+      "platform_profile": "balanced",
+      "platform_profile_choices": [
+        "low-power",
+        "balanced",
+        "performance"
+      ]
+    }
+  },
+  "kernel_modules": [
+    "amdgpu",
+    "nvidia"
+  ],
+  "warnings": [],
+  "unavailable": [
+    {
+      "collector": "memory.modules",
+      "reason": "per-module type/speed requires DMI access (dmidecode) which is not used during a read-only unprivileged scan"
+    }
+  ]
+}

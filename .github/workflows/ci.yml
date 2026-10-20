@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Type check
+        run: mypy
+
+      - name: Test
+        run: pytest -ra
+
+      - name: Scan the runner hardware
+        run: |
+          openqos hardware scan --privacy --output "$RUNNER_TEMP/inventory.json"
+          openqos hardware validate "$RUNNER_TEMP/inventory.json"
+
+      - name: Plan the ISO build
+        run: openqos image build

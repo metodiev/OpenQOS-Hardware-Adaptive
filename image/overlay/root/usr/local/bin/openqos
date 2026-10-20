@@ -1,0 +1,7 @@
+#!/bin/sh
+# OpenQOS command wrapper for the live environment.
+# The Python sources are installed read-only under /opt/openqos/src.
+set -eu
+PYTHONPATH="/opt/openqos/src${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH
+exec /usr/bin/python3 -m openqos "$@"

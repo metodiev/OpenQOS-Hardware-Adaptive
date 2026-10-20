@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<image>
+	<!--
+		OpenQOS live-environment layer.
+
+		These packages are additional to the Fedora KDE Plasma live image. The
+		hardware scanner itself only needs the Python 3 standard library; the
+		remaining tools exist for diagnostics and recovery work in the live
+		session.
+	-->
+	<packages type="image" patternType="plusRecommended" profiles="KDE-Desktop-Live">
+		<package name="python3"/>
+		<package name="pciutils"/>
+		<package name="usbutils"/>
+		<package name="dmidecode"/>
+		<package name="util-linux"/>
+		<package name="kernel-modules"/>
+	</packages>
+</image>
