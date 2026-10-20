@@ -132,6 +132,7 @@ scripts/                maintenance helpers (sample inventory generation)
 ## Documentation
 
 * [Architecture](docs/architecture.md)
+* [Development environment](docs/development-environment.md)
 * [Hardware support and detection limits](docs/hardware-support.md)
 * [ISO building](docs/iso-building.md)
 * [Security model](docs/security.md)
