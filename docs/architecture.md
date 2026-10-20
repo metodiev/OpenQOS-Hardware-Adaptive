@@ -12,7 +12,7 @@ as planned.
 | --- | --- | --- |
 | Hardware discovery | `openqos.hardware` | Implemented (read-only) |
 | Inventory schema and validation | `openqos.schemas`, `openqos.hardware.validate` | Implemented |
-| Image builder | `openqos.imagebuilder` | Implemented, execution not yet run |
+| Image builder | `openqos.imagebuilder` | Implemented and verified (built + boot-tested) |
 | Hardware profiles / compatibility DB | — | Planned |
 | Optimizer | — | Planned |
 | Installer | — | Planned |
@@ -104,9 +104,11 @@ and the pinned inputs.
 The overlay copies `src/openqos` into `/opt/openqos/src` inside the image and
 installs a `/usr/local/bin/openqos` wrapper. That means the live image contains
 exactly the sources that were built — no separately packaged copy can drift.
+The overlay is declarative: KIWI imports the description's `root/` directory, so
+no post-install shell hook is injected into Fedora's `config.sh`.
 
-Applying the overlay is idempotent: the `Fedora.kiwi` include line and the
-`config.sh` block are each added at most once.
+Applying the overlay is idempotent: the `Fedora.kiwi` include line is added at
+most once.
 
 ## Command-line interface
 

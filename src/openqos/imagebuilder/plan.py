@@ -36,6 +36,25 @@ HOST_PACKAGES = {
     "qemu-img": None,
 }
 
+
+@dataclass(frozen=True)
+class HostRequirement:
+    """A package or binary that must exist on the build host."""
+
+    name: str
+    kind: str  # "rpm" or "command"
+    provides: str | None = None
+
+
+HOST_REQUIREMENTS = (
+    HostRequirement("kiwi-cli", "rpm", "kiwi-ng"),
+    HostRequirement("kiwi-systemdeps", "rpm"),
+    HostRequirement("distribution-gpg-keys", "rpm"),
+    HostRequirement("git", "command"),
+    HostRequirement("xorriso", "command"),
+    HostRequirement("qemu-img", "command"),
+)
+
 #: Packages that make up the OpenQOS live environment layer.
 LIVE_PACKAGES = [
     "python3",
@@ -137,7 +156,6 @@ def build_plan(profile: str = "generic", *, work_directory: str = ".work/iso") -
         overlay_files=[
             "image/overlay/components/openqos.xml",
             "image/overlay/root/usr/local/bin/openqos",
-            "image/overlay/config.sh.append",
         ],
         notes=[
             "The build must run on Fedora Linux; kiwi is not packaged for Windows.",

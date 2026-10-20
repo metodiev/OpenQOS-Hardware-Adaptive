@@ -10,6 +10,8 @@ from typing import Any
 from openqos.errors import ImageBuildError
 from openqos.imagebuilder.manifest import build_manifest, verify_iso, write_manifest
 from openqos.imagebuilder.plan import (
+    FEDORA_RELEASE,
+    HOST_REQUIREMENTS,
     KIWI_DESCRIPTIONS_BRANCH,
     KIWI_DESCRIPTIONS_COMMIT,
     KIWI_DESCRIPTIONS_REPOSITORY,
@@ -78,7 +80,11 @@ def _relative_or_absolute(item: str, project_root: Path) -> str:
 
 
 def source_revision(project_root: Path, *, runner: Any = None) -> str | None:
-    """Return the OpenQOS git revision, or ``None`` outside a git checkout."""
+    """Return the OpenQOS git revision, or ``None`` outside a git checkout.
+
+    A ``-dirty`` suffix marks a build from a tree with uncommitted changes, so a
+    release manifest can never silently claim a clean revision.
+    """
     runner = runner or subprocess.run
     completed = runner(
         ["git", "-C", str(project_root), "rev-parse", "HEAD"],
@@ -89,7 +95,41 @@ def source_revision(project_root: Path, *, runner: Any = None) -> str | None:
     )
     if completed.returncode != 0:
         return None
-    return (completed.stdout or "").strip() or None
+    revision = (completed.stdout or "").strip()
+    if not revision:
+        return None
+
+    status = runner(
+        ["git", "-C", str(project_root), "status", "--porcelain"],
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    if status.returncode == 0 and (status.stdout or "").strip():
+        return f"{revision}-dirty"
+    return revision
+
+
+def installed_package_versions(*, runner: Any = None) -> dict[str, str]:
+    """Return the installed versions of the required build packages."""
+    runner = runner or subprocess.run
+    packages = [requirement.name for requirement in HOST_REQUIREMENTS if requirement.kind == "rpm"]
+    completed = runner(
+        ["rpm", "-q", "--qf", "%{NAME} %{VERSION}-%{RELEASE}\n", *packages],
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    if completed.returncode != 0:
+        return {}
+    versions: dict[str, str] = {}
+    for line in (completed.stdout or "").splitlines():
+        parts = line.split()
+        if len(parts) == 2 and parts[0] in packages:
+            versions[parts[0]] = parts[1]
+    return versions
 
 
 def build_image(
@@ -119,22 +159,24 @@ def build_image(
     manifest = build_manifest(
         artifact,
         plan=plan,
+        package_versions=installed_package_versions(runner=runner),
         source_revision=source_revision(project_root, runner=runner),
     )
     manifest["overlay_files"] = [_relative_or_absolute(item, project_root) for item in changed]
 
     releases_directory.mkdir(parents=True, exist_ok=True)
-    manifest_path = releases_directory / f"{iso_path.stem}.manifest.json"
-    write_manifest(manifest, manifest_path)
+    release_name = f"openqos-{plan['profile']}-{FEDORA_RELEASE}.iso"
+    manifest_path = releases_directory / f"{Path(release_name).stem}.manifest.json"
 
-    checksum_path = releases_directory / f"{iso_path.name}.sha256"
-    checksum_path.write_text(f"{artifact['sha256']}  {iso_path.name}\n", encoding="utf-8")
+    checksum_path = releases_directory / f"{release_name}.sha256"
+    checksum_path.write_text(f"{artifact['sha256']}  {release_name}\n", encoding="utf-8")
 
-    released_iso = releases_directory / iso_path.name
+    released_iso = releases_directory / release_name
     if released_iso.resolve() != iso_path.resolve():
         shutil.copy2(iso_path, released_iso)
 
+    manifest["released_iso"] = str(released_iso)
     manifest["manifest_path"] = str(manifest_path)
     manifest["checksum_path"] = str(checksum_path)
-    manifest["released_iso"] = str(released_iso)
+    write_manifest(manifest, manifest_path)
     return manifest

@@ -5,11 +5,13 @@ from __future__ import annotations
 import os
 import platform
 import shutil
+import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from openqos.imagebuilder.plan import FEDORA_RELEASE, HOST_PACKAGES
+from openqos.imagebuilder.plan import FEDORA_RELEASE, HOST_REQUIREMENTS
 
 _MINIMUM_FREE_BYTES = 20 * 1024**3
 
@@ -35,10 +37,13 @@ def run_preflight(
     work_directory: Path | None = None,
     release_file: Path = Path("/etc/os-release"),
     system: str | None = None,
+    which: Callable[[str], str | None] = shutil.which,
+    rpm_query: Callable[[str], bool] | None = None,
 ) -> list[Check]:
     """Collect host checks. Never modifies the host."""
     checks: list[Check] = []
     system = system or platform.system()
+    rpm_query = rpm_query or _rpm_installed
 
     checks.append(
         Check("linux-host", system == "Linux", f"platform is {system}", required=True)
@@ -64,12 +69,28 @@ def run_preflight(
         )
     )
 
-    for tool in HOST_PACKAGES:
-        binary = "kiwi-ng" if tool == "kiwi-cli" else tool
-        found = shutil.which(binary)
-        checks.append(
-            Check(f"tool:{tool}", found is not None, found or f"{binary} not found on PATH")
-        )
+    for requirement in HOST_REQUIREMENTS:
+        if requirement.kind == "rpm":
+            installed = rpm_query(requirement.name)
+            detail = (
+                f"{requirement.name} is installed"
+                if installed
+                else f"{requirement.name} package is not installed"
+            )
+            if not installed and requirement.provides:
+                located = which(requirement.provides)
+                installed = located is not None
+                detail = located or detail
+            checks.append(Check(f"package:{requirement.name}", installed, detail))
+        else:
+            located = which(requirement.name)
+            checks.append(
+                Check(
+                    f"command:{requirement.name}",
+                    located is not None,
+                    located or "not found on PATH",
+                )
+            )
 
     is_root = hasattr(os, "geteuid") and os.geteuid() == 0
     checks.append(
@@ -103,6 +124,19 @@ def run_preflight(
 
 def required_failures(checks: list[Check]) -> list[Check]:
     return [check for check in checks if check.required and not check.ok]
+
+
+def _rpm_installed(package: str) -> bool:
+    try:
+        completed = subprocess.run(  # noqa: S603
+            ["rpm", "-q", "--whatprovides", package],  # noqa: S607
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except OSError:
+        return False
+    return completed.returncode == 0
 
 
 def _parse_os_release(path: Path) -> dict[str, str]:

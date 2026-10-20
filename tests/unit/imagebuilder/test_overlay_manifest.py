@@ -10,7 +10,7 @@ import pytest
 
 from openqos.errors import ImageBuildError
 from openqos.imagebuilder.manifest import build_manifest, sha256_file, verify_iso, write_manifest
-from openqos.imagebuilder.plan import KIWI_DESCRIPTIONS_COMMIT, build_plan
+from openqos.imagebuilder.plan import FEDORA_RELEASE, KIWI_DESCRIPTIONS_COMMIT, build_plan
 from openqos.imagebuilder.runner import apply_overlay
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -41,12 +41,14 @@ def test_apply_overlay_copies_sources_and_is_idempotent(tmp_path: Path) -> None:
 
     kiwi_text = (description / "Fedora.kiwi").read_text(encoding="utf-8")
     assert kiwi_text.count("components/openqos.xml") == 1
-    config_text = (description / "config.sh").read_text(encoding="utf-8")
-    assert config_text.count("OpenQOS overlay") == 1
+    release_marker = description / "root" / "etc" / "openqos-release"
+    assert release_marker.read_text(encoding="utf-8").startswith("OpenQOS live environment")
+    assert f"base=Fedora Linux {FEDORA_RELEASE}" in release_marker.read_text(encoding="utf-8")
+    config_before = (description / "config.sh").read_text(encoding="utf-8")
 
     apply_overlay(description, overlay, _PROJECT_ROOT)
     assert (description / "Fedora.kiwi").read_text(encoding="utf-8").count("openqos.xml") == 1
-    assert (description / "config.sh").read_text(encoding="utf-8").count("OpenQOS overlay") == 1
+    assert (description / "config.sh").read_text(encoding="utf-8") == config_before
 
 
 def test_apply_overlay_requires_description(tmp_path: Path) -> None:
@@ -124,11 +126,44 @@ def test_preflight_reports_fedora_and_tools(tmp_path: Path) -> None:
     )
     names = {check.name for check in checks}
     assert {"linux-host", "fedora-host", "fedora-release", "root-privileges"} <= names
-    assert any(check.name.startswith("tool:") for check in checks)
+    assert "package:kiwi-cli" in names
+    assert "command:git" in names
     # The Fedora and Linux checks must pass for the synthetic host release file.
     failed_names = {check.name for check in required_failures(checks)}
     assert "linux-host" not in failed_names
     assert "fedora-host" not in failed_names
+
+
+def test_preflight_uses_rpm_for_packages(tmp_path: Path) -> None:
+    from openqos.imagebuilder.preflight import run_preflight
+
+    release_file = tmp_path / "os-release"
+    release_file.write_text('ID=fedora\nVERSION_ID=44\n', encoding="utf-8")
+    checks = run_preflight(
+        work_directory=tmp_path,
+        release_file=release_file,
+        system="Linux",
+        which=lambda name: f"/usr/bin/{name}",
+        rpm_query=lambda package: package == "kiwi-cli",
+    )
+    by_name = {check.name: check for check in checks}
+    assert by_name["package:kiwi-cli"].ok is True
+    assert by_name["package:kiwi-systemdeps"].ok is False
+    assert by_name["command:xorriso"].ok is True
+
+
+def test_installed_package_versions_parses_rpm_output() -> None:
+    from openqos.imagebuilder.build import installed_package_versions
+
+    def fake_runner(command, **kwargs):
+        return SimpleNamespace(
+            returncode=0,
+            stdout="kiwi-cli 11.1.1-2.fc44\nkiwi-systemdeps 11.1.1-2.fc44\nnoise\n",
+        )
+
+    versions = installed_package_versions(runner=fake_runner)
+    assert versions["kiwi-cli"] == "11.1.1-2.fc44"
+    assert "noise" not in versions
 
 
 def test_run_build_reports_failure(tmp_path: Path) -> None:
@@ -152,6 +187,31 @@ def test_run_build_returns_produced_iso(tmp_path: Path) -> None:
         return SimpleNamespace(returncode=0, stdout="ok")
 
     assert run_build(tmp_path, output, runner=fake_runner).name == "Fedora-KDE-Desktop-Live.iso"
+
+
+def test_run_build_finds_iso_in_kiwi_target_directory(tmp_path: Path) -> None:
+    from openqos.imagebuilder.runner import run_build
+
+    output = tmp_path / "out"
+    target = tmp_path / "out-build"
+    target.mkdir()
+    _fake_iso(target / "Fedora.x86_64-44.iso")
+
+    def fake_runner(command, **kwargs):
+        return SimpleNamespace(returncode=0, stdout="ok")
+
+    iso = run_build(tmp_path, output, runner=fake_runner)
+    assert iso.name == "Fedora.x86_64-44.iso"
+
+
+def test_source_revision_marks_dirty_tree(tmp_path: Path) -> None:
+    from openqos.imagebuilder.build import source_revision
+
+    def fake_runner(command, **kwargs):
+        stdout = "b" * 40 + "\n" if "rev-parse" in command else " M src/openqos/cli.py\n"
+        return SimpleNamespace(returncode=0, stdout=stdout)
+
+    assert source_revision(tmp_path, runner=fake_runner) == "b" * 40 + "-dirty"
 
 
 def test_build_image_end_to_end_with_fake_runner(tmp_path: Path) -> None:
@@ -180,6 +240,8 @@ def test_build_image_end_to_end_with_fake_runner(tmp_path: Path) -> None:
             _fake_iso(output / "Fedora-KDE-Desktop-Live.iso")
         if "rev-parse" in command:
             return SimpleNamespace(returncode=0, stdout="a" * 40 + "\n")
+        if "status" in command:
+            return SimpleNamespace(returncode=0, stdout="")
         return SimpleNamespace(returncode=0, stdout="ok")
 
     releases = tmp_path / "releases"
@@ -197,4 +259,5 @@ def test_build_image_end_to_end_with_fake_runner(tmp_path: Path) -> None:
         manifest["artifact"]["sha256"]
     )
     assert Path(manifest["released_iso"]).is_file()
+    assert manifest["released_iso"].endswith("openqos-generic-44.iso")
     assert any(command[0] == "git" for command in commands)

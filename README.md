@@ -21,7 +21,7 @@ anything that could modify a machine.
 | Read-only hardware inventory (`openqos hardware scan`) | **Implemented** |
 | Versioned JSON schema + validator (`openqos hardware validate`) | **Implemented** |
 | ISO build plan and preflight (`openqos image plan/build`) | **Implemented** |
-| ISO build execution on Fedora (KIWI overlay) | **Implemented, not yet executed** — no Fedora host was available |
+| ISO build execution on Fedora (KIWI overlay) | **Verified** — `releases/openqos-generic-44.iso`, booted under BIOS and UEFI |
 | Hardware profile / compatibility database | Planned (Phase 2) |
 | Optimization engine | Planned (Phase 2) |
 | Installer | Planned (Phase 3) |
@@ -45,10 +45,17 @@ python -m venv .venv
 . .venv/bin/activate            # Windows: .venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 
-pytest                          # 62 tests
+pytest                          # 67 tests
 ruff check .
 mypy
 ```
+
+### Released artifact
+
+`releases/openqos-generic-44.iso` is a boot-tested Fedora 44 KDE live image with
+the OpenQOS tooling installed. See
+[docs/iso-building.md](docs/iso-building.md#verified-build) for the recorded
+build inputs, SHA-256, and boot-test evidence.
 
 ### Scan the current machine
 

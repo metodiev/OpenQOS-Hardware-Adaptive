@@ -61,8 +61,11 @@ What happens:
 2. `image/overlay` is applied to the checkout:
    * `components/openqos.xml` adds the OpenQOS live packages;
    * the include line is added to `Fedora.kiwi` exactly once;
-   * `root/usr/local/bin/openqos` and `root/opt/openqos/src/openqos` are installed;
-   * `config.sh.append` is appended to `config.sh` exactly once.
+   * `root/usr/local/bin/openqos` and `root/opt/openqos/src/openqos` are
+     installed through KIWI's description `root/` overlay;
+   * `root/etc/openqos-release` records the pinned release and OpenQOS version.
+
+   No script is injected into `config.sh`; the overlay is purely declarative.
 3. `./kiwi-build --image-type=iso --image-profile=KDE-Desktop-Live` runs with
    output logged to `<work-dir>/kiwi-build.log`.
 4. The result is verified: file size, ISO 9660 volume descriptor, SHA-256.
@@ -98,9 +101,64 @@ Not supported by KIWI. Options, in order of preference:
 3. Run only the planning, preflight, overlay, and manifest code, which is
    platform independent and covered by the test suite.
 
-## Current status
+## Verified build
 
-The build pipeline is implemented and unit tested, but **no ISO has been built
-yet**: this development environment has no Fedora host, no `kiwi-ng`, and no
-`/dev/kvm`. Do not treat the ISO path as proven until a build and a QEMU boot
-test have been recorded here.
+A complete build and boot test was performed on **2026-10-20**:
+
+| Item | Value |
+| --- | --- |
+| Build host | Fedora Linux 44 container (Docker Desktop 29.7.2), x86-64, root |
+| `kiwi-cli` / `kiwi-systemdeps` | 11.1.1-2.fc44 |
+| `distribution-gpg-keys` | 1.123-1.fc44 |
+| KIWI descriptions | `f44` @ `dfc49a5a10f69941179fdadd96aa6a5984f7c677` |
+| Target | `iso` / `KDE-Desktop-Live` |
+| Duration | about 8 minutes (package download included) |
+| Artifact | `releases/openqos-generic-44.iso` |
+| Size | 3,414,601,728 bytes (3256.4 MiB) |
+| SHA-256 | recorded in `releases/openqos-generic-44.iso.sha256` |
+| Manifest | `releases/openqos-generic-44.manifest.json` |
+
+Build command (inside the container, repository at `/work`):
+
+```bash
+PYTHONPATH=/work/src python3 -m openqos image build --execute \
+    --work-directory /var/tmp/openqos-iso \
+    --releases-directory /var/tmp/openqos-releases
+```
+
+### What was verified
+
+1. All preflight checks passed (`linux-host`, `fedora-host`, `fedora-release`,
+   `package:*`, `command:*`, `root-privileges`, `disk-space`).
+2. `kiwi-ng` produced a hybrid ISO with both El Torito entries:
+   BIOS (`/boot/x86_64/loader/eltorito.img`) and UEFI (61440-block EFI image).
+3. The ISO 9660 volume descriptor and SHA-256 were checked by
+   `openqos image build`.
+4. The live root was extracted from `/LiveOS/squashfs.img` (EROFS in Fedora 44)
+   and contains:
+   * `/usr/local/bin/openqos` (mode 0755),
+   * `/opt/openqos/src/openqos/**` (mode 0644, all collectors and the schema),
+   * `/etc/openqos-release` with `base=Fedora Linux 44`, `openqos=0.1.0`.
+5. The shipped CLI was executed from the extracted tree:
+   `openqos 0.1.0`, and `openqos hardware scan` + `validate` both succeeded
+   against a live kernel.
+6. The ISO was booted twice under QEMU 10.2.2 with KVM:
+   * SeaBIOS (BIOS) boot, 4 GiB RAM, 4 vCPU, virtio-vga;
+   * OVMF (UEFI) boot with the same settings.
+
+   Both reached the KDE Plasma live desktop with the *Welcome to Fedora Linux!*
+   dialog and the **Install to Hard Drive** launcher, which is the expected
+   Phase 1 end state.
+
+### Not yet verified
+
+* The Anaconda installer itself was not run to completion; that is Phase 3 work.
+* Nothing was booted on physical hardware, so no hardware-compatibility claim is
+  made.
+* The ISO was produced inside a privileged Fedora 44 container rather than on a
+  bare-metal Fedora host. The build steps are identical, but a bare-metal run
+  remains to be recorded.
+* `grub2-probe: failed to get canonical path of 'overlay'` appears during the
+  `grub2-efi-x64` post-install scriptlet inside the container. It is a
+  container-filesystem artefact, not an OpenQOS change; the resulting ISO still
+  boots on both firmware types.

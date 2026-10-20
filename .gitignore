@@ -18,7 +18,6 @@ htmlcov/
 .work/
 out/
 releases/*.iso
-releases/*.manifest.json
 
 # OS / editor noise
 .DS_Store

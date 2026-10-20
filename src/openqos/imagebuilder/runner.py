@@ -7,11 +7,11 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from openqos import __version__
 from openqos.errors import ImageBuildError
-from openqos.imagebuilder.plan import BASE_IMAGE_PROFILE, BASE_KIWI_FILE
+from openqos.imagebuilder.plan import BASE_IMAGE_PROFILE, BASE_KIWI_FILE, FEDORA_RELEASE
 
 _KIWI_INCLUDE = '<include from="this://./components/openqos.xml"/>'
-_OVERLAY_MARKER = "# --- OpenQOS overlay (managed by openqos image build) ---"
 
 
 def apply_overlay(description_dir: Path, overlay_dir: Path, project_root: Path) -> list[str]:
@@ -42,6 +42,18 @@ def apply_overlay(description_dir: Path, overlay_dir: Path, project_root: Path) 
             shutil.copy2(source, target)
             changed.append(str(target))
 
+    release_marker = description_dir / "root" / "etc" / "openqos-release"
+    release_marker.parent.mkdir(parents=True, exist_ok=True)
+    release_marker.write_text(
+        "OpenQOS live environment\n"
+        f"base=Fedora Linux {FEDORA_RELEASE}\n"
+        f"openqos={__version__}\n",
+        encoding="utf-8",
+    )
+    changed.append(str(release_marker))
+    # Bind mounts and Windows hosts do not carry POSIX modes, so set them.
+    _set_tree_modes(description_dir / "root", executable={"openqos"})
+
     package_source = project_root / "src" / "openqos"
     package_target = description_dir / "root" / "opt" / "openqos" / "src" / "openqos"
     if not package_source.is_dir():
@@ -53,6 +65,7 @@ def apply_overlay(description_dir: Path, overlay_dir: Path, project_root: Path) 
         package_target,
         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
     )
+    _set_tree_modes(package_target)
     changed.append(str(package_target))
 
     kiwi_file = description_dir / BASE_KIWI_FILE
@@ -62,16 +75,19 @@ def apply_overlay(description_dir: Path, overlay_dir: Path, project_root: Path) 
     if _KIWI_INCLUDE not in content:
         kiwi_file.write_text(_append_include(content), encoding="utf-8")
         changed.append(str(kiwi_file))
-
-    config_script = description_dir / "config.sh"
-    append_source = overlay_dir / "config.sh.append"
-    if append_source.is_file():
-        addition = append_source.read_text(encoding="utf-8")
-        existing = config_script.read_text(encoding="utf-8") if config_script.is_file() else ""
-        if _OVERLAY_MARKER not in existing:
-            config_script.write_text(existing.rstrip("\n") + "\n\n" + addition, encoding="utf-8")
-            changed.append(str(config_script))
     return changed
+
+
+def _set_tree_modes(root: Path, *, executable: frozenset[str] | set[str] = frozenset()) -> None:
+    """Give copied overlay files deterministic POSIX permissions."""
+    for path in [root, *sorted(root.rglob("*"))]:
+        try:
+            if path.is_dir() or path.name in executable:
+                path.chmod(0o755)
+            else:
+                path.chmod(0o644)
+        except OSError:  # pragma: no cover - permissions are best effort
+            continue
 
 
 def _append_include(content: str) -> str:
@@ -117,7 +133,20 @@ def run_build(
             f"see {log_path or 'the build output'}"
         )
 
-    images = sorted(output_dir.glob("*.iso"))
+    images = _find_images(output_dir)
     if not images:
         raise ImageBuildError(f"kiwi-build reported success but no ISO was found in {output_dir}")
     return images[0]
+
+
+def _find_images(output_dir: Path) -> list[Path]:
+    """Locate ISOs in the output directory or the kiwi target directory.
+
+    ``kiwi-build`` passes ``--target-dir "<output-dir>-build"`` to ``kiwi-ng``,
+    so the finished image is written next to the requested output directory.
+    """
+    candidates: list[Path] = []
+    for directory in (output_dir, output_dir.parent / f"{output_dir.name}-build"):
+        if directory.is_dir():
+            candidates.extend(directory.glob("*.iso"))
+    return sorted(candidates, key=lambda path: path.stat().st_mtime, reverse=True)
