@@ -61,9 +61,9 @@ scan has run yet until one does.
 
 ## Verified
 
-The integration was verified with the ISO built from revision
-`a1f5597` (`releases/openqos-generic-44.iso`,
-SHA-256 `d85b1e2a1fd5ed09460d3ba1fb07af327c724b95adb9d1778195b13171da8bfe`):
+The integration was verified with the final ISO built from revision
+`d3bc42c` (`releases/openqos-generic-44.iso`,
+SHA-256 `c0796e3fdc5283987ede35b818329c95b70c4aa8969bb5d58da516752fcb9df5`):
 
 1. `systemctl --root=<image root> is-enabled openqos-scan.service` reports
    `enabled`, so the unit is active without any manual step.

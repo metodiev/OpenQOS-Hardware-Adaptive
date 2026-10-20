@@ -114,9 +114,9 @@ A complete build and boot test was performed on **2026-10-20**:
 | Target | `iso` / `KDE-Desktop-Live` |
 | Duration | about 8-15 minutes (package download and EROFS compression included) |
 | Artifact | `releases/openqos-generic-44.iso` |
-| Size | 3,414,626,304 bytes (3256.3 MiB) |
-| SHA-256 | `d85b1e2a1fd5ed09460d3ba1fb07af327c724b95adb9d1778195b13171da8bfe` |
-| Source revision | `a1f5597144788da7fe3ece7e6e4082ca9bb2ad7f` |
+| Size | 3,407,941,632 bytes (3250.1 MiB) |
+| SHA-256 | `c0796e3fdc5283987ede35b818329c95b70c4aa8969bb5d58da516752fcb9df5` |
+| Source revision | `d3bc42cadf1ce97e58666e59c0268a7518597594` |
 | Manifest | `releases/openqos-generic-44.manifest.json` |
 
 Build command (inside the container, repository at `/work`):

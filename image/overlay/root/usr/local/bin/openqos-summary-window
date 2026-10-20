@@ -3,6 +3,10 @@
 # Started by /etc/xdg/autostart/openqos-summary.desktop in the live session.
 set -eu
 
+# KDE may process the autostart entry more than once; keep a single window.
+exec 9>"/tmp/openqos-summary-window.lock"
+flock -n 9 || exit 0
+
 for _ in $(seq 1 60); do
     [ -s /var/lib/openqos/summary.txt ] && break
     sleep 1
