@@ -538,6 +538,12 @@ def _render_disks(candidates: list[Any]) -> str:
         if candidate.partitions:
             lines.append(f"  {'':16} partitions: {', '.join(candidate.partitions)}")
         lines.append("")
+    if not any(candidate.eligible for candidate in candidates):
+        lines.append(
+            "no disk is eligible: the live medium cannot be the install target. "
+            "Attach a second disk and run this again."
+        )
+        lines.append("")
     return "\n".join(lines)
 
 

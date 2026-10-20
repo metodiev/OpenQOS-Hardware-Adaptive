@@ -15,6 +15,7 @@ from openqos.installer.disks import enumerate_disks
 from openqos.installer.plan import (
     ROOT_FSTYPE,
     build_install_plan,
+    detect_release_version,
     render_kickstart,
     validate_install_plan,
 )
@@ -91,7 +92,9 @@ def test_live_medium_is_refused(amd_desktop_tree: Path, tmp_path: Path) -> None:
     assert "hosts the running live medium" in candidates["sdz"].reasons
 
 
-def _install_plan(disk_tree: Path, tmp_path: Path) -> dict:
+def _install_plan(
+    disk_tree: Path, tmp_path: Path, *, release_version: str | None = ""
+) -> dict:
     inventory = scan(disk_tree)
     profile = build_profile(inventory)
     optimization = build_plan(profile)
@@ -100,7 +103,11 @@ def _install_plan(disk_tree: Path, tmp_path: Path) -> dict:
         for candidate in enumerate_disks(disk_tree, mount_table=_mount_table(tmp_path))
         if candidate.name == "sdb"
     )
-    return build_install_plan(profile, optimization, disk.to_dict())
+    if release_version == "":
+        return build_install_plan(profile, optimization, disk.to_dict())
+    return build_install_plan(
+        profile, optimization, disk.to_dict(), release_version=release_version
+    )
 
 
 def test_install_plan_requires_explicit_eligible_disk(disk_tree: Path, tmp_path: Path) -> None:
@@ -151,6 +158,56 @@ def test_kickstart_root_filesystem_matches_plan(
     fstype = plan["layout"]["root"]["fstype"]
     assert fstype == ROOT_FSTYPE == "ext4"
     assert f"part / --fstype={fstype} --grow" in render_kickstart(plan)
+
+
+def test_kickstart_pins_repositories_to_the_medium_release(disk_tree: Path, tmp_path: Path) -> None:
+    plan = _install_plan(disk_tree, tmp_path, release_version="44")
+    text = render_kickstart(plan)
+    assert plan["source"]["release_version"] == "44"
+    assert (
+        "repo --name=fedora --metalink="
+        "https://mirrors.fedoraproject.org/metalink?repo=fedora-44&arch=$basearch" in text
+    )
+    assert (
+        "repo --name=updates --metalink="
+        "https://mirrors.fedoraproject.org/metalink?repo=updates-released-f44&arch=$basearch"
+        in text
+    )
+    assert "network --bootproto=dhcp --device=link --activate" in text
+
+
+def test_kickstart_omits_repositories_without_a_release(disk_tree: Path, tmp_path: Path) -> None:
+    plan = _install_plan(disk_tree, tmp_path, release_version=None)
+    text = render_kickstart(plan)
+    assert plan["source"]["repositories"] == []
+    assert "repo --name=" not in text
+    assert "network --bootproto=dhcp --device=link --activate" in text
+
+
+def test_release_version_detection(tmp_path: Path) -> None:
+    (tmp_path / "etc").mkdir()
+    (tmp_path / "etc/os-release").write_text(
+        'NAME="Fedora Linux"\nID=fedora\nVERSION_ID=44\n', encoding="utf-8"
+    )
+    assert detect_release_version(tmp_path) == "44"
+    (tmp_path / "etc/os-release").write_text(
+        'NAME="Ubuntu"\nID=ubuntu\nVERSION_ID="24.04"\n', encoding="utf-8"
+    )
+    assert detect_release_version(tmp_path) is None
+    (tmp_path / "etc/os-release").unlink()
+    assert detect_release_version(tmp_path) is None
+
+
+def test_disks_output_explains_when_nothing_is_eligible(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = tmp_path / "tiny"
+    _add_disk(root, "sda", gib=8, removable=True)
+    assert main(["install", "disks", "--root", str(root)]) == 0
+    output = capsys.readouterr().out
+    assert "refused: removable media" in output
+    assert "no disk is eligible" in output
+    assert "Attach a second disk" in output
 
 
 def test_rotational_target_skips_trim(tmp_path: Path, amd_desktop_tree: Path) -> None:

@@ -7,6 +7,7 @@ chosen disk, produces a Fedora Kickstart file, and hands execution to Anaconda.
 from __future__ import annotations
 
 import datetime as _dt
+from pathlib import Path
 from typing import Any
 
 from openqos.errors import InstallError
@@ -27,6 +28,43 @@ _KDE_GROUP = "kde-desktop-environment"
 #: Decisions that the Kickstart can apply without running custom code at boot.
 _INSTALL_STAGE_DECISIONS = {"storage-trim", "packages"}
 
+_METALINK = "https://mirrors.fedoraproject.org/metalink?repo={repo}&arch=$basearch"
+
+
+def detect_release_version(root: Path | None = None) -> str | None:
+    """Return the Fedora release of the running medium, if it is Fedora.
+
+    Anaconda resolves repository URLs itself and can pick the wrong release,
+    which then fails signature verification against the keys on the medium.
+    """
+    prefix = root or Path("/")
+    for path in (prefix / "etc/os-release", prefix / "usr/lib/os-release"):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        data = {}
+        for line in text.splitlines():
+            key, separator, value = line.partition("=")
+            if separator:
+                data[key.strip()] = value.strip().strip('"')
+        if data.get("ID") != "fedora":
+            return None
+        return data.get("VERSION_ID") or None
+    return None
+
+
+def _repositories(release_version: str | None) -> list[dict[str, str]]:
+    if not release_version:
+        return []
+    return [
+        {"name": "fedora", "metalink": _METALINK.format(repo=f"fedora-{release_version}")},
+        {
+            "name": "updates",
+            "metalink": _METALINK.format(repo=f"updates-released-f{release_version}"),
+        },
+    ]
+
 
 def build_install_plan(
     profile: dict[str, Any],
@@ -34,11 +72,14 @@ def build_install_plan(
     disk: dict[str, Any],
     *,
     user_password: str | None = None,
+    release_version: str | None = None,
 ) -> dict[str, Any]:
     """Build a validated installation plan for one explicit disk."""
     if not disk.get("eligible"):
         reasons = "; ".join(disk.get("reasons") or ["not eligible"])
         raise InstallError(f"refusing to install to {disk.get('path')}: {reasons}")
+    if release_version is None:
+        release_version = detect_release_version()
     name = disk["name"]
     machine = profile.get("machine") or {}
     firmware = machine.get("firmware") or {}
@@ -84,6 +125,10 @@ def build_install_plan(
             "packages": _packages(optimization_plan),
             "excluded": [],
         },
+        "source": {
+            "release_version": release_version,
+            "repositories": _repositories(release_version),
+        },
         "bootloader": {
             "loader": "grub2-efi" if firmware.get("boot_mode") == "uefi" else "grub2",
             "timeout_seconds": 5,
@@ -107,6 +152,14 @@ def build_install_plan(
     if user_password is not None:
         plan["user"]["password_provided"] = True
     return plan
+
+
+def _repo_lines(plan: dict[str, Any]) -> list[str]:
+    source = plan.get("source") or {}
+    return [
+        f"repo --name={repository['name']} --metalink={repository['metalink']}"
+        for repository in source.get("repositories") or []
+    ]
 
 
 def _packages(optimization_plan: dict[str, Any]) -> list[str]:
@@ -204,6 +257,8 @@ def render_kickstart(plan: dict[str, Any]) -> str:
         f"part / --fstype={layout['root']['fstype']} --grow "
         f"--size={layout['root']['minimum_mib']} --ondisk={name}",
         f"bootloader --timeout={plan['bootloader']['timeout_seconds']}",
+        "network --bootproto=dhcp --device=link --activate",
+        *_repo_lines(plan),
         "",
         "%packages",
     ]

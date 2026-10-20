@@ -49,6 +49,34 @@ Existing operating systems are visible through those partitions and mount
 points. OpenQOS never selects a disk automatically, and there is no
 "first disk" default.
 
+A single-disk machine therefore has **no** eligible target: the live medium
+cannot be erased while it is running. Attach a second disk (a blank virtual
+disk is enough) before running `install disks`. When nothing is eligible the
+command says so explicitly:
+
+```
+no disk is eligible: the live medium cannot be the install target.
+Attach a second disk and run this again.
+```
+
+## Install source
+
+The Kickstart pins the package source to the release of the running medium, so
+the installed system matches the ISO instead of whatever the network considers
+current:
+
+```
+repo --name=fedora --metalink=https://mirrors.fedoraproject.org/metalink?repo=fedora-44&arch=$basearch
+repo --name=updates --metalink=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f44&arch=$basearch
+```
+
+The release comes from `ID`/`VERSION_ID` in `/etc/os-release`; on a non-Fedora
+host no repositories are pinned and Anaconda uses its own defaults. Skipping
+this pin is not harmless: Anaconda 44 resolves `$releasever` on its own, picks
+the current stable release instead of the medium's, and the transaction then
+aborts with `Signature verification failed` because the new packages are signed
+with keys the medium does not carry.
+
 ## Layout
 
 | Mount | Filesystem | Size |
@@ -82,6 +110,9 @@ clearpart --all --initlabel --drives=nvme0n1
 part /boot/efi --fstype=efi --size=600 --ondisk=nvme0n1
 part /boot --fstype=ext4 --size=1024 --ondisk=nvme0n1
 part / --fstype=ext4 --grow --size=4096 --ondisk=nvme0n1
+network --bootproto=dhcp --device=link --activate
+repo --name=fedora --metalink=https://mirrors.fedoraproject.org/metalink?repo=fedora-44&arch=$basearch
+repo --name=updates --metalink=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f44&arch=$basearch
 ...
 %packages
 @kde-desktop-environment
