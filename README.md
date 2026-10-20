@@ -11,27 +11,64 @@ or userspace infrastructure.
 
 ## Project status
 
-This repository is at the end of **Phase 1 (Foundation)**. It contains real,
-tested code — not placeholder files — and it deliberately stops short of
-anything that could modify a machine.
+Roadmap phases 1–5 are implemented and were exercised in a real virtual
+machine, which found and fixed several genuine installer bugs (see
+[What still has to be finished](#what-still-has-to-be-finished)). The live
+medium is boot-tested; the installer now completes and the installed system
+boots, but the currently published ISO predates those fixes.
 
 | Area | Status |
 | --- | --- |
-| Repository structure, packaging, linting, typing, tests | **Implemented** |
+| Repository structure, packaging, linting, typing, tests | **Implemented** — 125 tests, `ruff`, `mypy --strict` |
 | Read-only hardware inventory (`openqos hardware scan`) | **Implemented** |
 | Versioned JSON schema + validator (`openqos hardware validate`) | **Implemented** |
 | ISO build plan and preflight (`openqos image plan/build`) | **Implemented** |
-| ISO build execution on Fedora (KIWI overlay) | **Verified** — `releases/openqos-generic-44.iso`, booted under BIOS and UEFI |
-| Hardware profile + compatibility rules (`openqos profile`) | **Implemented** (master roadmap Phase 3) |
-| Optimization planner (`openqos optimize`) | **Implemented** — plan only, nothing applied (Phase 3) |
-| Live USB integration (`openqos-scan.service`, boot report) | **Implemented** (Phase 4) |
-| Installer planning + Kickstart (`openqos install`) | **Implemented** (Phase 5) — execution not yet run end-to-end |
-| Installer execution (Anaconda to a real disk) | Not yet run (Phase 5) |
+| ISO build execution on Fedora (KIWI overlay) | **Verified** — booted under BIOS and UEFI |
+| Hardware profile + compatibility rules (`openqos profile`) | **Implemented** (Phase 2/3) |
+| Optimization planner (`openqos optimize`) | **Implemented** — plan only, nothing applied |
+| Live USB integration (`openqos-scan.service`, boot report) | **Verified** — report opens on the live desktop (Phase 4) |
+| Installer planning + Kickstart (`openqos install`) | **Implemented** (Phase 5) |
+| Installer execution (Anaconda to a real disk) | **Verified** — installed system boots; rebuild with display manager pending (Phase 5) |
 | Runtime adaptation service | Planned |
 | Benchmarks | Planned (Phase 7) |
 
 Nothing in this repository partitions disks, writes to `/boot`, or changes
-firmware settings.
+firmware settings on the machine running the tests.
+
+## What still has to be finished
+
+1. **Publish an installable ISO.** `releases/openqos-generic-44.iso`
+   (SHA-256 `c0796e3f…`) predates the installer fixes: it boots the live
+   desktop and the report window, but **cannot install** — Anaconda never
+   formats the btrfs root. A rebuilt ISO from `4268031` was produced in the
+   build container (`/var/tmp/releases14/openqos-generic-44.iso`,
+   SHA-256 `0665a7da5c49a0863c28607078b4138d6b675971cb7e3b17491c9262f44e0bee`)
+   and is not yet published. Publishing means: rebuild, verify, then copy the
+   ISO, its `.sha256`, and its manifest into `releases/` and commit them.
+
+2. **Finish the end-to-end install verification.** The last *fully* verified
+   install used the ISO from `ca39109`: Anaconda reached `Complete!`, the
+   installed disk booted (`Fedora Linux 44`, kernel `7.2.11-200.fc44`), the ESP
+   carried `shimx64.efi`/`grubx64.efi`, and the payload plus state
+   (`/etc/openqos-release`, `/usr/local/bin/openqos`, `openqos-scan.service`,
+   `/var/lib/openqos/*`) were present. That system booted to a text console
+   because no display manager was installed; `4268031` adds `sddm` and selects
+   `graphical.target`, and that combination still needs one clean install run
+   ending at the graphical login screen.
+
+3. **Runtime adaptation (roadmap Phase 6/7).** The optimizer produces decisions
+   with rationale and rollback data, but nothing applies them at runtime yet,
+   and no benchmark has been written.
+
+Known gaps to plan around:
+
+* Installing requires **network access** — the medium carries no package
+  repository, so Anaconda installs from `fedora`/`updates`. The release is pinned
+  through `/.buildstamp` and `/etc/dnf/vars/releasever`.
+* Accounts are **locked** by design (`rootpw --lock`, `user --lock`), so a fresh
+  install has no usable login until a password is set from a rescue shell.
+* The installer needs a **second disk**: the live medium's own disk is refused
+  as a target.
 
 ## Requirements
 
@@ -47,7 +84,7 @@ python -m venv .venv
 . .venv/bin/activate            # Windows: .venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 
-pytest                          # 120 tests
+pytest                          # 125 passed, 1 skipped (Linux-only sysfs test)
 ruff check .
 mypy
 ```
@@ -55,7 +92,9 @@ mypy
 ### Released artifact
 
 `releases/openqos-generic-44.iso` is a boot-tested Fedora 44 KDE live image with
-the OpenQOS tooling installed. See
+the OpenQOS tooling installed. It is **not installable**: it was built before the
+installer fixes listed in
+[What still has to be finished](#what-still-has-to-be-finished). See
 [docs/iso-building.md](docs/iso-building.md#verified-build) for the recorded
 build inputs, SHA-256, and boot-test evidence.
 
