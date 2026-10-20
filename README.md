@@ -25,7 +25,8 @@ anything that could modify a machine.
 | Hardware profile + compatibility rules (`openqos profile`) | **Implemented** (master roadmap Phase 3) |
 | Optimization planner (`openqos optimize`) | **Implemented** — plan only, nothing applied (Phase 3) |
 | Live USB integration (`openqos-scan.service`, boot report) | **Implemented** (Phase 4) |
-| Installer | Planned (Phase 5) |
+| Installer planning + Kickstart (`openqos install`) | **Implemented** (Phase 5) — execution not yet run end-to-end |
+| Installer execution (Anaconda to a real disk) | Not yet run (Phase 5) |
 | Runtime adaptation service | Planned |
 | Benchmarks | Planned (Phase 7) |
 
@@ -46,7 +47,7 @@ python -m venv .venv
 . .venv/bin/activate            # Windows: .venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 
-pytest                          # 107 tests
+pytest                          # 120 tests
 ruff check .
 mypy
 ```
@@ -149,6 +150,7 @@ scripts/                maintenance helpers (sample inventory generation)
 * [Hardware support and detection limits](docs/hardware-support.md)
 * [Profiles and optimization](docs/profiles-and-optimization.md)
 * [Live USB integration](docs/live-usb.md)
+* [Installation](docs/installation.md)
 * [ISO building](docs/iso-building.md)
 * [Security model](docs/security.md)
 * [Contributing](CONTRIBUTING.md)

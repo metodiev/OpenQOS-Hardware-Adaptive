@@ -33,3 +33,7 @@ class ProfileError(OpenQOSError):
 
 class OptimizationError(OpenQOSError):
     """Raised when an optimization plan cannot be produced."""
+
+
+class InstallError(OpenQOSError):
+    """Raised when an installation cannot be planned or started."""

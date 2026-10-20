@@ -18,6 +18,14 @@ from openqos.imagebuilder.manifest import build_manifest, verify_iso
 from openqos.imagebuilder.plan import build_plan as build_image_plan
 from openqos.imagebuilder.plan import render_plan as render_image_plan
 from openqos.imagebuilder.preflight import required_failures, run_preflight
+from openqos.installer.disks import enumerate_disks
+from openqos.installer.plan import build_install_plan, render_kickstart, validate_install_plan
+from openqos.installer.runner import (
+    DEFAULT_KICKSTART,
+    DEFAULT_LOG,
+    DEFAULT_REPORT,
+    run_installer,
+)
 from openqos.optimizer.engine import build_plan as build_optimization_plan
 from openqos.optimizer.engine import render_plan as render_optimization_plan
 from openqos.optimizer.validate import (
@@ -153,6 +161,36 @@ def build_parser() -> argparse.ArgumentParser:
     )
     status.add_argument("--format", choices=("text", "json"), default="text")
 
+    install = subparsers.add_parser("install", help="automated installation commands")
+    install_sub = install.add_subparsers(dest="install_command", required=True)
+
+    disks_parser = install_sub.add_parser("disks", help="list candidate installation disks")
+    disks_parser.add_argument("--format", choices=("text", "json"), default="text")
+    disks_parser.add_argument("--root", type=Path, default=None, help=argparse.SUPPRESS)
+
+    install_plan = install_sub.add_parser(
+        "plan", help="generate an installation plan and Kickstart file"
+    )
+    install_plan.add_argument("--inventory", "-i", type=Path, required=True)
+    install_plan.add_argument("--disk", required=True, help="explicit target, e.g. /dev/nvme0n1")
+    install_plan.add_argument(
+        "--policy", default="balanced", choices=("balanced", "performance", "power-saving")
+    )
+    install_plan.add_argument("--format", choices=("plan", "kickstart"), default="plan")
+    install_plan.add_argument("--output", "-o", type=Path, default=None)
+    install_plan.add_argument("--kickstart", type=Path, default=None)
+    install_plan.add_argument("--root", type=Path, default=None, help=argparse.SUPPRESS)
+
+    install_run = install_sub.add_parser(
+        "run", help="start Anaconda with a generated plan (requires --confirm)"
+    )
+    install_run.add_argument("--plan", type=Path, required=True)
+    install_run.add_argument("--confirm", required=True, help="exact disk name to erase")
+    install_run.add_argument("--execute", action="store_true")
+    install_run.add_argument("--kickstart", type=Path, default=None)
+    install_run.add_argument("--log", type=Path, default=None)
+    install_run.add_argument("--report", type=Path, default=None)
+
     return parser
 
 
@@ -170,6 +208,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_optimize(args)
         if args.command == "status":
             return _run_status(args)
+        if args.command == "install":
+            return _run_install(args)
     except OpenQOSError as error:
         print(f"openqos: error: {error}", file=sys.stderr)
         return 2
@@ -420,6 +460,85 @@ def _run_status(args: argparse.Namespace) -> int:
         write_summary(status, args.write_summary)
     sys.stdout.write(payload)
     return 0
+
+
+def _run_install(args: argparse.Namespace) -> int:
+    if args.install_command == "disks":
+        candidates = enumerate_disks(args.root)
+        if args.format == "json":
+            payload = json.dumps([candidate.to_dict() for candidate in candidates], indent=2) + "\n"
+        else:
+            payload = _render_disks(candidates)
+        sys.stdout.write(payload)
+        return 0
+
+    if args.install_command == "plan":
+        inventory = load_document(args.inventory)
+        profile = build_profile(inventory)
+        validate_profile_or_raise(profile)
+        optimization_plan = build_optimization_plan(profile, policy=args.policy)
+        validate_plan_or_raise(optimization_plan)
+        candidates = enumerate_disks(args.root)
+        disk = next(
+            (candidate for candidate in candidates if candidate.path == args.disk), None
+        )
+        if disk is None:
+            available = ", ".join(candidate.path for candidate in candidates) or "none"
+            raise OpenQOSError(f"no disk {args.disk!r} was found; candidates: {available}")
+        install_plan = build_install_plan(profile, optimization_plan, disk.to_dict())
+        problems = validate_install_plan(install_plan)
+        if problems:
+            joined = "\n".join(f"  - {problem}" for problem in problems)
+            raise OpenQOSError(f"install plan is invalid:\n{joined}")
+
+        if args.kickstart:
+            args.kickstart.parent.mkdir(parents=True, exist_ok=True)
+            args.kickstart.write_text(render_kickstart(install_plan), encoding="utf-8")
+            print(f"wrote {args.kickstart}", file=sys.stderr)
+        payload = (
+            render_kickstart(install_plan)
+            if args.format == "kickstart"
+            else json.dumps(install_plan, indent=2) + "\n"
+        )
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(payload, encoding="utf-8")
+            print(f"wrote {args.output}")
+        else:
+            sys.stdout.write(payload)
+        return 0
+
+    if args.install_command == "run":
+        plan = load_json(args.plan)
+        result = run_installer(
+            plan,
+            confirmation=args.confirm,
+            execute=args.execute,
+            kickstart_path=args.kickstart or DEFAULT_KICKSTART,
+            log_path=args.log or DEFAULT_LOG,
+            report_path=args.report or DEFAULT_REPORT,
+        )
+        sys.stdout.write(json.dumps(result, indent=2) + "\n")
+        return 0
+
+    raise OpenQOSError(f"unknown install command {args.install_command!r}")
+
+
+def _render_disks(candidates: list[Any]) -> str:
+    if not candidates:
+        return "no block devices were found\n"
+    lines = ["candidate disks:", ""]
+    for candidate in candidates:
+        status = "eligible" if candidate.eligible else "refused: " + "; ".join(candidate.reasons)
+        lines.append(
+            f"  {candidate.path:16} {candidate.size_gib:>9.2f} GiB  "
+            f"{candidate.transport:8} {candidate.model or 'unknown model'}"
+        )
+        lines.append(f"  {'':16} {status}")
+        if candidate.partitions:
+            lines.append(f"  {'':16} partitions: {', '.join(candidate.partitions)}")
+        lines.append("")
+    return "\n".join(lines)
 
 
 def _inventory_summary(document: dict[str, Any]) -> str:
