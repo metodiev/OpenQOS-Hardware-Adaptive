@@ -54,7 +54,9 @@ def apply_overlay(description_dir: Path, overlay_dir: Path, project_root: Path) 
     changed.append(str(release_marker))
     changed.extend(_enable_units(description_dir, ("openqos-scan.service",)))
     # Bind mounts and Windows hosts do not carry POSIX modes, so set them.
-    _set_tree_modes(description_dir / "root", executable={"openqos"})
+    _set_tree_modes(
+        description_dir / "root", executable={"openqos", "openqos-summary-window"}
+    )
 
     package_source = project_root / "src" / "openqos"
     package_target = description_dir / "root" / "opt" / "openqos" / "src" / "openqos"
