@@ -1,0 +1,2 @@
+# Enable the OpenQOS boot report in the live image and on installed systems.
+enable openqos-scan.service

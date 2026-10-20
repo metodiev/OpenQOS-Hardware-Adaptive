@@ -46,6 +46,8 @@ def test_apply_overlay_copies_sources_and_is_idempotent(tmp_path: Path) -> None:
         description / "root" / "etc" / "xdg" / "autostart" / "openqos-summary.desktop"
     ).is_file()
     assert (description / "root" / "usr" / "local" / "bin" / "openqos-summary-window").is_file()
+    preset = description / "root" / "etc" / "systemd" / "system-preset" / "90-openqos.preset"
+    assert "enable openqos-scan.service" in preset.read_text(encoding="utf-8")
     desktop = description / "root" / "etc" / "xdg" / "autostart" / "openqos-summary.desktop"
     assert b"Exec=/usr/local/bin/openqos-summary-window" in desktop.read_bytes()
     if os.name != "nt":
