@@ -52,6 +52,13 @@ def apply_overlay(description_dir: Path, overlay_dir: Path, project_root: Path) 
         ).encode()
     )
     changed.append(str(release_marker))
+
+    # Anaconda and dnf resolve $releasever from /etc/system-release. The medium
+    # ships a fixed release, so state it instead of letting them guess.
+    dnf_releasever = description_dir / "root" / "etc" / "dnf" / "vars" / "releasever"
+    dnf_releasever.parent.mkdir(parents=True, exist_ok=True)
+    dnf_releasever.write_bytes(f"{FEDORA_RELEASE}\n".encode())
+    changed.append(str(dnf_releasever))
     changed.extend(_enable_units(description_dir, ("openqos-scan.service",)))
     # Bind mounts and Windows hosts do not carry POSIX modes, so set them.
     _set_tree_modes(

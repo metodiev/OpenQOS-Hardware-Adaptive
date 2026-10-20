@@ -28,16 +28,9 @@ _KDE_GROUP = "kde-desktop-environment"
 #: Decisions that the Kickstart can apply without running custom code at boot.
 _INSTALL_STAGE_DECISIONS = {"storage-trim", "packages"}
 
-_METALINK = "https://mirrors.fedoraproject.org/metalink?repo={repo}&arch=$basearch"
-_GPG_KEY = "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-{release}-{suffix}"
-
 
 def detect_release_version(root: Path | None = None) -> str | None:
-    """Return the Fedora release of the running medium, if it is Fedora.
-
-    Anaconda resolves repository URLs itself and can pick the wrong release,
-    which then fails signature verification against the keys on the medium.
-    """
+    """Return the Fedora release of the running medium, if it is Fedora."""
     prefix = root or Path("/")
     for path in (prefix / "etc/os-release", prefix / "usr/lib/os-release"):
         try:
@@ -53,27 +46,6 @@ def detect_release_version(root: Path | None = None) -> str | None:
             return None
         return data.get("VERSION_ID") or None
     return None
-
-
-def _repositories(release_version: str | None) -> list[dict[str, Any]]:
-    if not release_version:
-        return []
-    keys = [
-        _GPG_KEY.format(release=release_version, suffix="primary"),
-        _GPG_KEY.format(release=release_version, suffix="$basearch"),
-    ]
-    return [
-        {
-            "name": "fedora",
-            "metalink": _METALINK.format(repo=f"fedora-{release_version}"),
-            "gpgkeys": keys,
-        },
-        {
-            "name": "updates",
-            "metalink": _METALINK.format(repo=f"updates-released-f{release_version}"),
-            "gpgkeys": keys,
-        },
-    ]
 
 
 def build_install_plan(
@@ -137,7 +109,7 @@ def build_install_plan(
         },
         "source": {
             "release_version": release_version,
-            "repositories": _repositories(release_version),
+            "managed_by_medium": True,
         },
         "bootloader": {
             "loader": "grub2-efi" if firmware.get("boot_mode") == "uefi" else "grub2",
@@ -151,7 +123,7 @@ def build_install_plan(
         "user": {"name": "openqos", "groups": ["wheel"], "locked": user_password is None},
         "decisions_at_install": install_decisions,
         "decisions_at_runtime": runtime_decisions,
-        "warnings": _warnings(profile, disk),
+        "warnings": _warnings(profile, disk, release_version),
         "safety": {
             "destructive": True,
             "requires_confirmation": True,
@@ -162,18 +134,6 @@ def build_install_plan(
     if user_password is not None:
         plan["user"]["password_provided"] = True
     return plan
-
-
-def _repo_lines(plan: dict[str, Any]) -> list[str]:
-    source = plan.get("source") or {}
-    lines = []
-    for repository in source.get("repositories") or []:
-        keys = ",".join(repository.get("gpgkeys") or [])
-        line = f"repo --name={repository['name']} --metalink={repository['metalink']}"
-        if keys:
-            line += f" --gpgkey={keys}"
-        lines.append(line)
-    return lines
 
 
 def _packages(optimization_plan: dict[str, Any]) -> list[str]:
@@ -198,7 +158,9 @@ def _policy_memory(optimization_plan: dict[str, Any]) -> dict[str, Any]:
     return {}
 
 
-def _warnings(profile: dict[str, Any], disk: dict[str, Any]) -> list[str]:
+def _warnings(
+    profile: dict[str, Any], disk: dict[str, Any], release_version: str | None
+) -> list[str]:
     warnings: list[str] = []
     if disk.get("partitions"):
         warnings.append(
@@ -209,6 +171,11 @@ def _warnings(profile: dict[str, Any], disk: dict[str, Any]) -> list[str]:
         warnings.append("Target is rotational storage; installation will be slower.")
     if (profile.get("machine") or {}).get("is_virtual_machine"):
         warnings.append("Target is a virtual machine disk.")
+    if release_version is None:
+        warnings.append(
+            "The running medium does not report a Fedora release, so Anaconda will "
+            "resolve $releasever itself and package signature verification can fail."
+        )
     return warnings
 
 
@@ -272,7 +239,6 @@ def render_kickstart(plan: dict[str, Any]) -> str:
         f"--size={layout['root']['minimum_mib']} --ondisk={name}",
         f"bootloader --timeout={plan['bootloader']['timeout_seconds']}",
         "network --bootproto=dhcp --device=link --activate",
-        *_repo_lines(plan),
         "",
         "%packages",
     ]

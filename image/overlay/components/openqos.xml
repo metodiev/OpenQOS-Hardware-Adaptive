@@ -10,6 +10,7 @@
 	-->
 	<packages type="image" patternType="plusRecommended" profiles="KDE-Desktop-Live">
 		<package name="python3"/>
+		<package name="fedora-release"/>
 		<package name="pciutils"/>
 		<package name="usbutils"/>
 		<package name="dmidecode"/>

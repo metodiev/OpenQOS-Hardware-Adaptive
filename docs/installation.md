@@ -61,22 +61,25 @@ Attach a second disk and run this again.
 
 ## Install source
 
-The Kickstart pins the package source to the release of the running medium, so
-the installed system matches the ISO instead of whatever the network considers
-current:
+The Kickstart defines **no** `repo` lines on purpose, so Anaconda keeps the
+repository definitions that ship on the medium — the ones that already carry the
+Fedora GPG keys. Two properties of the medium make that work:
 
-```
-repo --name=fedora --metalink=https://mirrors.fedoraproject.org/metalink?repo=fedora-44&arch=$basearch --gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-44-primary,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-44-$basearch
-repo --name=updates --metalink=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f44&arch=$basearch --gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-44-primary,file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-44-$basearch
-```
+* `fedora-release` is installed, so `/etc/system-release` resolves and Anaconda
+  reports the medium's release instead of falling back to `rawhide`.
+* `/etc/dnf/vars/releasever` contains the release, written by the image builder
+  from `FEDORA_RELEASE`.
 
-The release comes from `ID`/`VERSION_ID` in `/etc/os-release`; on a non-Fedora
-host no repositories are pinned and Anaconda uses its own defaults. The `repo`
-lines carry the keys from the medium, because Anaconda disables the system
-repositories as soon as a Kickstart defines its own: without `--gpgkey` every
-package fails with `Signature verification failed`. Keeping the pin matters
-too — Anaconda 44 otherwise resolves `$releasever` to the current stable release
-instead of the medium's, which fails verification against the medium's keys.
+Both matter: with a dangling `/etc/system-release` Anaconda resolved
+`$releasever` to the current stable release, downloaded a complete Fedora 45
+payload for a 44 medium, and then aborted the transaction with
+`Signature verification failed` because the medium only carries the 44 keys.
+
+Defining `repo` lines is not an alternative: Kickstart's `repo` command has no
+`--gpgkey` option, and any `repo` line makes Anaconda ignore the system
+repositories, which leaves the pinned repositories without a key. The plan
+records the detected release in `source.release_version` and warns when the
+medium cannot report one.
 
 ## Layout
 
@@ -112,8 +115,6 @@ part /boot/efi --fstype=efi --size=600 --ondisk=nvme0n1
 part /boot --fstype=ext4 --size=1024 --ondisk=nvme0n1
 part / --fstype=ext4 --grow --size=4096 --ondisk=nvme0n1
 network --bootproto=dhcp --device=link --activate
-repo --name=fedora --metalink=https://mirrors.fedoraproject.org/metalink?repo=fedora-44&arch=$basearch
-repo --name=updates --metalink=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f44&arch=$basearch
 ...
 %packages
 @kde-desktop-environment

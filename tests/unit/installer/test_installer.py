@@ -160,30 +160,18 @@ def test_kickstart_root_filesystem_matches_plan(
     assert f"part / --fstype={fstype} --grow" in render_kickstart(plan)
 
 
-def test_kickstart_pins_repositories_to_the_medium_release(disk_tree: Path, tmp_path: Path) -> None:
+def test_kickstart_leaves_repositories_to_the_medium(disk_tree: Path, tmp_path: Path) -> None:
     plan = _install_plan(disk_tree, tmp_path, release_version="44")
     text = render_kickstart(plan)
     assert plan["source"]["release_version"] == "44"
-    assert (
-        "repo --name=fedora --metalink="
-        "https://mirrors.fedoraproject.org/metalink?repo=fedora-44&arch=$basearch"
-        " --gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-44-primary,"
-        "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-44-$basearch" in text
-    )
-    assert (
-        "repo --name=updates --metalink="
-        "https://mirrors.fedoraproject.org/metalink?repo=updates-released-f44&arch=$basearch"
-        in text
-    )
-    assert "network --bootproto=dhcp --device=link --activate" in text
-
-
-def test_kickstart_omits_repositories_without_a_release(disk_tree: Path, tmp_path: Path) -> None:
-    plan = _install_plan(disk_tree, tmp_path, release_version=None)
-    text = render_kickstart(plan)
-    assert plan["source"]["repositories"] == []
     assert "repo --name=" not in text
     assert "network --bootproto=dhcp --device=link --activate" in text
+
+
+def test_install_plan_warns_without_a_release(disk_tree: Path, tmp_path: Path) -> None:
+    plan = _install_plan(disk_tree, tmp_path, release_version=None)
+    assert plan["source"]["release_version"] is None
+    assert any("$releasever" in warning for warning in plan["warnings"])
 
 
 def test_release_version_detection(tmp_path: Path) -> None:
